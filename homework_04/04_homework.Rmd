@@ -1,0 +1,590 @@
+---
+title: "SMDS Homework - Block 4"
+author: "P. Morichetti, M. Rispoli, A. Cicchini and E. Ballarin  |  Group 'B'"
+date: "27th May 2020"
+output:
+  html_document:
+    theme: darkly
+    highlight: breezedark
+    mathjax: default
+    self_contained: true
+    md_extensions: +autolink_bare_uris
+    toc: true
+    toc_collapsed: false
+    toc_float: true
+    toc_depth: 3
+    number_sections: false
+header-includes:
+- \usepackage{color}
+- \usepackage{graphicx}
+- \usepackage{grffile}
+institute: University of Trieste, SISSA, ICTP, University of Udine
+graphics: yes
+fontsize: 10pt
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.align = 'center', warning=FALSE, message=FALSE, fig.asp=0.625, dev='png', global.par = TRUE, dev.args=list(pointsize=10), fig.path = 'figs/')
+```
+
+```{r setup, include=FALSE}
+library(knitr)
+local({
+  hook_plot = knit_hooks$get('plot')
+  knit_hooks$set(plot = function(x, options) {
+    paste0('\n\n----\n\n', hook_plot(x, options))
+  })
+})
+```
+
+
+# Exercises from *DAAG, Chapter 6* 
+
+## Exercise 6
+
+### Text
+
+The following code snippet investigates the consequences of not using a logarithmic transformation for the `nihills` dataset analysis.  
+
+The second model differs from the first in having a $\mathsf{dist} \times \mathsf{climb}$ interaction term, additional to linear terms in $\mathsf{dist}$ and $\mathsf{climb}$.  
+
+(a) Fit the two models:  
+`nihills.lm  <- lm(time ~ dist+climb, data=nihills)`  
+`nihills2.lm <- lm(time ~ dist+climb+dist:climb, data=nihills)`  
+`anova(nihills.lm, nihills2.lm)`  
+
+(b) Using the F-test result, make a tentative choice of model, and proceed to examine diagnostic plots.  
+Are there any problematic observations? What happens if these points are removed?  
+
+Refit both of the above models, and check the diagnostics again.
+
+
+### Solution
+
+```{r daag_06_06, code = readLines("src/DAAG_06_06.R"), echo=TRUE}
+```
+
+### Comments
+
+After having fit both *Model 1* (i.e. the linear model that tries to explain record `time` for male athletes from the `dist`ance and `climb` variables, without considering the interaction term) and *Model 2* (the one considering also interaction between `dist` and `climb`) on the entire, un-transformed, `nihills` dataset, we can look at *Fisher-test ANOVA* for model selection, being *Model 1* nested inside *Model 2*.  
+
+With a value of $F = 72.406$ and a *p-value* $<10^{-7}$ *Model 2* is evidently (according to the *F-test*) the model of choice in such setting.  
+
+Upon inspection, however, it appears clear that the relatively poor behaviour of *Model 1* as opposed to *Model 2* is strongly determined by the influence of few data-points (one, mainly!).  
+
+In fact, considering for the moment *Model 1*:
+
+- From the *Residuals vs Fitted* graph, it appears clearly that tracks *Seven Sevens* and *Annalong Horseshoe* have both highest residuals (though of opposite sign) and highest fitted values. This evidence of heteroscedasticity is further confirmed by the *Scale-Location* plot.  
+- From the *Residuals vs Leverage* plot we know that the *Seven Sevens* track is also a potential influential point. Such findings, together with the observation that *Seven Sevens* is the only point in the dataset with such comparably high fitted value from the model, make it a highly likely *over*-influential point for the fitted model.
+
+Now, looking at *Model 2* diagnostic plots, we can see that:
+
+- The *Seven Sevens* track has become one of the datapoints with the smallest residuals, but with a fitted value comparable with that previously obtained.  
+- Such datapoint still exhibits high leverage and uniqueness among the datapoints with such high fitted value: it is still a candidate to be an *over*-influential point.  
+
+We can therefore conclude that the additional interaction term (and associated degree of freedom for the model) mainly serves the purpose of correcting the model behaviour for taking into account the appearantly *deviant* behaviour of *Seven Sevens* datapoint in *Model 1*.  
+
+For that reason, we try to re-fit the model on the (still, untransformed) `nihills` dataset, after removal of the *Seven Sevens* datapoint.  
+
+This time, *Fisher-test ANOVA* suggests to avoid the additional interaction term and to accept the simpler model, proving our previous assumption as probably correct.  
+
+Now, at the price of some additional residuals-non-normality even at central quantiles, and without solving the still present problem of heteroscedasticity, the model is less *over*-determined by the influence of single-datapoints.  
+
+Still, the behaviour previously observed for the *Seven Sevens* datapoint can now be found -- though with a smaller effect overall -- in the behaviour of the *Annalong Horseshoe* datapoint. We still observe high (and unique) fitted value, a residual among the highest and a high Cook distance from zero.   
+
+Repeating the fit on the dataset additionally devoided of the *Annalong Horseshoe* datapoint, previously-evidenced conclusions are even more amplified and confirmed: the final model (still, the simpler one) obtained this way is no longer *over*-determined by single datapoints and more balanced overall w.r.t. high-residual, high-leverage points.  
+
+The interesting result to be noted with such regard is that -- being the *Seven Sevens* and *Annalong Horseshoe* datapoints those whose outlying associated $\mathsf{time}$ value is the farthest from the linear trends *time/dist* and *time/climb* -- the lack of proper logarithmic transformation of the dataset both produces generally inaccurate models and also may trick the analyst into preferring an over-parametrized model whose effect is just that to amplify the importance of such *outlying* value(s).
+
+## Exercise 8
+
+### Text
+
+Apply the `lm.ridge()` function to the `litters` data, using the generalized cross-validation (GCV) criterion to choose the tuning parameter. (GCV is an approximation to cross-validation.)
+
+a. In particular, estimate the coefficients of the model relating `brainwt` to `bodywt` and `lsize` and compare with the results obtained using `lm()`.  
+b. Using both ridge and ordinary regression, estimate the mean brain weight when litter size is 10 and body weight is 7. Use the bootstrap, with case-resampling, to compute approximate 95% percentile confidence intervals using each method. Compare with the interval obtained using `predict.lm()`.
+
+### Solution
+
+Let's begin by taking a quick look at the data
+
+```{r daag6_8a, echo=TRUE}
+library(DAAG)
+library(MASS) # for lm.ridge()
+
+head(DAAG::litters)
+plot(DAAG::litters)   # Some linters may complain: that's fine.
+```
+
+From this basic plot we can immediately tell that:
+
+- `brainwt` is positively correlated to `bodywt` and negatively correlated to `lsize`, although the correlation appears to be very noisy;  
+- There's a significant negative correlation between `bodywt` and `lsize`;
+
+
+we may expect some problems arising from the collinearity evidenced in the latter, when fitting `brainwt` against `bodywt` and `lsize`.
+
+
+Let's see how the linear model and ridge regression do:
+
+```{r daag6_8b,echo=TRUE}
+
+# fit the vanilla linear model
+litters.lm = lm(brainwt~bodywt+lsize, data=litters)
+summary(litters.lm)
+
+# fit the ridge linear regression (selecting lambda by GCV)
+MASS::select(MASS::lm.ridge(brainwt~bodywt+lsize, data=DAAG::litters,
+                lambda = seq(0,1,0.001)))
+best.lambda = .118
+litters.ridge = MASS::lm.ridge(brainwt~bodywt+lsize, data=DAAG::litters,
+                         lambda=best.lambda)
+litters.ridge
+
+
+# estimate training MSE for comparing the models
+
+# function that computes the predictions of a lm.ridge() model
+predridge <- function(model = litters.ridge, littersdf = DAAG::litters){
+  coeffs = coef(model)
+  return(coeffs[1] + coeffs[2] * littersdf$bodywt + coeffs[3] * littersdf$lsize)
+}
+
+litters.ridge.residuals <- DAAG::litters$brainwt - predridge()
+
+print(paste("lm MSE: ",
+            sum(litters.lm$residuals**2) / length(litters.lm$residuals)))
+print(paste("ridge MSE: ",
+            sum(litters.ridge.residuals**2) / length(litters.ridge.residuals)))
+
+```
+
+The coefficients estimated by ridge regression for both predictors are slightly smaller than those fitted by the linear model without regularization, which is something that we expect to see in ridge regression, although the intercept's value slightly increases. 
+
+We can compare the model looking at the training-set MSE, which actually shows a very small difference in favour of the model without regularization.
+
+Let's now check our models' prediction on a the novel datapoint $(7,10)$. We'll also estimate the percentile bootstrap 95% confidence interval for both methods around $(7,10)$ and compare them with the 95% CI reported by `lm()`:
+
+```{r daag6_8c, echo=TRUE}
+
+# estimate models on the new datapoint
+newpoint = data.frame(bodywt=7, lsize=10)
+
+yhat.lm <- predict(litters.lm, newdata = newpoint)
+yhat.ridge <- predridge(litters.ridge,newpoint)
+
+# estimate percentile bootstrap CI for lm and lm.ridge at newpoint
+
+n <- nrow(DAAG::litters)
+B = 1000
+
+lm.bs = 1:B
+ridge.bs = 1:B
+
+for(b in 1:B){
+  idxs = sample (1:n,n, replace = TRUE)
+  bootdf = DAAG::litters[idxs,]
+  
+  b_lm = lm(brainwt~ bodywt + lsize, data = bootdf)
+  lm.bs[b] <- predict(b_lm, newdata = newpoint)
+  
+  b_ridge = MASS::lm.ridge(brainwt~ bodywt + lsize, data = bootdf, lambda = best.lambda)
+  ridge.bs[b] <- predridge(b_ridge, newpoint)
+}
+
+
+lm.ci = quantile(lm.bs,probs=c(0.025,0.975))
+
+ridge.ci = quantile(ridge.bs,probs=c(0.025,0.975))
+
+print("lm estimate + bootstrap 95% CI:")
+print(paste(yhat.lm, "(", lm.ci[1],",",lm.ci[2],")"))
+
+print("ridge estimate + bootstrap 95% CI:")
+print(paste(yhat.ridge, "(", ridge.ci[1],",",ridge.ci[2],")"))
+
+print("lm() estimate and CI")
+predict(litters.lm, newdata = newpoint,interval="confidence", level=.95)
+
+lm.cibase = predict(litters.lm, newdata = newpoint,interval="confidence", level=.95)[2:3]
+
+#plot the three intervals 
+plot(as.factor(c("lm+bs","lm+wald","ridge+bs")),c(yhat.lm,yhat.lm,yhat.ridge),       
+     ylim=c(.404,.425))   # Some linters may complain: not an error.
+
+
+lines(c(1,1),lm.ci, col="red")
+lines(c(2,2),lm.cibase, col="red")
+lines(c(3,3),ridge.ci, col="red")
+
+```
+
+We can see from the graph that the bootstrap CI is slightly asymmetric, but once again the difference in the estimates is very small.
+
+
+## Exercise 10
+
+### Text
+The dataframe $\mathsf{table.b3}$ in the $\mathsf{MPV}$ package contains data on gas mileage and $11$ other variables for a sample of $32$ automobiles.
+
+### Question: *a*
+
+Construct a scatterplot of $y$ ($\mathsf{mpg}$) versus `x1` ($\mathsf{displacement}$). Is the relationship between these variables *non-linear*?
+
+#### Solution
+
+```{r}
+library(MPV)
+library(lattice)
+
+plot_fit <- function(fitted_model, x, y, xlab, subtitle){
+  plot(x, y, main = "fitted model", xlab = xlab, sub = subtitle) # Some linters may complain: not an error.
+  lines(x, as.vector(fitted_model$fitted.values), col ="red")
+  text(13,3, "y = b0+b1*x", col="red")
+}
+```
+
+
+```{r daag06_10a, code = readLines("src/DAAG_06_10_A.R"), echo=TRUE}
+```
+
+Just by looking at the scatterplot, we can notice a *non-linear* relationship between the response $y$ and the predictor `x1`: these variables seem to be negatively correlated (i.e., as `x1` increases, $y$ decreases), laying approximately on a convex smooth curve. We may consider some possible transformation to the data in order to re-linearize their relationship.  
+
+No *strange* points are (yet) detected.
+
+### Question: *b*
+
+Use the `xyplot()` function, and `x1` (type of transmission) as a group variable. Is a linear model reasonable for these data?
+
+#### Solution
+
+```{r daag06_10b, code = readLines("src/DAAG_06_10_B.R"), echo=TRUE}
+```
+
+Just by looking at the plot, we can notice that the data might be adequately partitioned according to the *trasmission method* (predictor `x1`) in order to subsequently fit two separate linear models. In fact, the observations belonging to `x_11 = 0` are located in the `x1` range $[100, 200]$, whereas the others in $[200, 500]$. Additionally, while still being noticeable a probably not-perfectly-linear relationship among the response and the `x1` predictor across both the partitions, the average slope of a hypotetical linear fit is greatly different among the two.
+
+To conclude, after having performed the split, it is reasonable to consider the data explained by two independent LMs.
+
+Still, no *strange* points are (yet) detected.
+
+### Question: *c*
+
+Fit the model relating y to `x1` and `x1` which gives two lines having possibly different slopes and intercepts. Check the diagnostics. Are there any influential observations? Are there any influential outliers?
+
+
+#### Solution
+
+```{r daag06_10c, code = readLines("src/DAAG_06_10_C.R"), echo=TRUE}
+```
+
+According to the summary function for the model fitted on group `x11 = 0`, we may say that: 
+
+- *Residuals* are spread in quite a large range and seem to be not totally symmetrical (mostly clumped on the left side of the median).
+
+- W.r.t. `x1`, the estimate (i.e. the slope of the linear regressor) has a negative value, but quite close to zero. Moreover, the *t statistic* is, in absolute value, quite small but still statistically significant.
+
+- W.r.t. the *adjusted* $R^2$, the variability of the model is explained at 67% just by considering the `x1` predictor. As expected, additional predictors further reduce the unexplained variance.
+
+- W.r.t. the *F-statistic*, its value is not far from $1$. In any case, its statistical significance suggests us to reject the null hypothesis against the statistical irrelevance of all estimated coefficients, intercept excluded.
+
+In conclusion, we may accept this simple linear model, but taking into account that it may not be able to explain completely the data.
+
+
+For what concerns the data partition `x11 = 1` we can make the following observations:
+
+- *Residuals* are spread in a reasonably compact range, and seem to be symmetrical around the median.
+
+- W.r.t. `x1`, the estimate (i.e. the slope of the linear regressor) has a negative value, but quite close to zero. Moreover, the *t statistic* is, in absolute value, quite small but still statistically significant.
+
+- W.r.t. the *adjusted* $R^2$, the variability of the model is explained at 58% just by considering the `x1` predictor. As expected, additional predictors further reduce the unexplained variance.
+
+- W.r.t. the *F-statistic*, its value is not far from $1$. In any case, its statistical significance suggests us to reject the null hypothesis against the statistical irrelevance of all estimated coefficients, intercept excluded.
+
+In conclusion, we may accept this simple linear model, but taking into account that it may not be able to explain completely the data.
+
+
+For what concerns the *residuals* for the fitted models we may say something more by looking at the proper *diagnostic plots*, especially for group `x11 = 0`:
+
+- **Residuals vs fitted**: the plot suggests us a weak pattern among the residuals, but they look quite spread. For that reason we cannot intuitively infer the hypotetical non-linear relationship among them to correct the model via data-transformation.
+
+- **QQ-plot**: the residuals seem to be normally-distributed, even if *point 12* is far from the straight theoretical line: it could be an outlier or a point carrying a large amount of information still unexplained by the model.
+
+- **Scale-location**: the trend-line suggests us the lack of significant heteroscedasticity. However, inasmuch the number of observations is small, we blindly accept such result; it is unlikely, however, that this may corrupt the efficacy of our model.
+
+- **Residuals vs leverage**: *point 5* shows a relevant Cook distance from zero, meaning that it has a strong influence on the model. It could be an outlier or an influential point (or both). 
+
+Upon further inspection, we can say that *point 5* seems to be both an outlier and an influential observation because -- additionally -- its residual is significantly large compared to the others, and it is the only point located in that portion of the `x1` domain.
+
+
+Similarly, for the group `x11 = 1`:
+
+- **Residuals vs fitted**: the plot suggests us no clear relationship among the residuals. For that reason we cannot intuitively infer a hypotetical non-linear relationship among them to correct the model via data-transformation.
+
+- **QQ-plot**: the residuals seem to be not-clearly-normally-distributed, especially for what concerns the point outside the $[-1, 1]$ range. Normality assumption is quite weakly verified.
+
+- **Scale-location**: the trend-line suggests us the lack of significant heteroscedasticity.
+
+- **Residuals vs leverage**: no point has a Cook distance greater than $1$ from $0$, even if the point $17$  is close to the boundary.
+
+
+### Question: *d*
+
+Plot the residuals against the variable `x7` (number of transmission speeds), again using `x1` as a group variable. Is there anything striking about this plot?
+
+#### Solution
+
+```{r daag06_10d, code = readLines("src/DAAG_06_10_D.R"), echo=TRUE}
+```
+
+The *residual plot* for the group `x11 = 0` shows us that the points are spread just over three different integer values of `x7` and doesn't  seem to exist a clear relationsip among their relative abundance.
+
+Considering the residual plot for the group `x11 = 1`, all points are located at a single value for `x7`, suggesting that `x7` is not a suitable predictor at all for our model and making pratically inapplicable any statistical tool in such regard. In the building of a model for such data, it can be safely discarded as useless.
+
+
+## Exercise 11
+
+### Text
+
+The following code is designed to explore effects that can result from the omission of *explanatory
+variables* among the predictors for a model:
+
+```{r andre_0}
+library(lattice)
+library(DAAG)
+
+set.seed(42)
+
+x1 <- runif(10)           # predictor which will be missing
+x2 <- rbinom(10, 1, 1-x1) # observed predictor which depends on missing predictor
+
+y <- 5*x1 + x2 + rnorm(10,sd=.1) # simulated model; coef of x2 is positive
+
+y.lm <- lm(y ~ factor(x2)) # model fitted to observed data
+coef(y.lm)
+
+# effect of missing variable:
+
+y.lm2 <- lm(y ~ x1 + factor(x2)) # coefficient of x2 has wrong sign
+coef(y.lm2)                      # correct model
+```
+
+What happens if `x2` is generated according to `x2 <- rbinom(10, 1, x1)`?
+What happens if `x2` is generated according to `x2 <- rbinom(10, 1, .5)`?
+
+### Solution
+
+First of all, theoretically speaking, if we consider only the $x_{2}$ predictor for the explanation of the response variable $y$, we get that $e=y-y_{estimated}=5\times x_{1} + v$ where $x_{1} \thicksim U(0,1)$ and $v \thicksim \mathcal{N}(0, 0.01)$.   
+We can deduce that the expected value $E(e) \neq 0$ and, as matter of fact, the invalidation of the *zero-mean hypothesis* for the stochastic component may cause the model to be biased.
+
+```{r andre_1}
+x2_1 <- rbinom(10, 1, x1)
+y_1 <- 5*x1 + x2_1 + rnorm(10,sd=.1)
+y_1.lm <- lm(y_1 ~ factor(x2_1)) # model fitted to observed data
+```
+
+```{r andre_2}
+y_1.lm2 <- lm(y_1 ~ x1 + factor(x2_1))
+```
+
+```{r andre_3}
+x2_2 <- rbinom(10, 1, .5)
+y_2 <- 5*x1 + x2_2 + rnorm(10,sd=.1)
+y_2.lm <- lm(y_2 ~ factor(x2_2)) # model fitted to observed data
+```
+
+```{r andre_4}
+y_2.lm2 <- lm(y_2~ x1 + factor(x2_2))
+```
+
+
+```{r andre_6}
+anova(y.lm,y.lm2)
+anova(y_1.lm,y_1.lm2)
+anova(y_2.lm,y_2.lm2)
+```
+
+By *ANOVA*-testing, we can notice a difference in term of unexplained *RSS* between the *one-variable* model (`x2`-only) and the *two-variables* model, as theoretically expected. However, the $F$-score significance of the `x1` predictor in the *two-variables* model -- much higher than that of the *one-variable* one shows us that the addition of `x1` to `x2` among the predictors reduced overall unexplained variance much better than the addition of `x2` alone over the *intercept-only* model. This is further confirmed by looking at the spread of partial residuals around their mean for the *one-variable* model vs the *two-variables* model w.r.t. `x2`.
+
+
+```{r andre_7}
+cor(x1,x2)    # negative correlation
+coef(y.lm)
+coef(y.lm2)
+
+cor(x1,x2_1)  # positive correlation
+coef(y_1.lm)
+coef(y_1.lm2)
+
+cor(x1,x2_2)  # almost zero correlation
+coef(y_2.lm)
+coef(y_2.lm2)
+
+```
+
+After a deeper analysis of the slope coefficient for the `x2` predictor w.r.t. its correlation with `x1`, we get that the sign of the correlation dominates that of the *original* generative process in such cases in which correlation among predictors is significant (1st, 2nd) and the most explanatory variable is omitted (`x2`-only models).  
+
+In cases with the same generative process, but both variables present among the chosen predictors, this is generally no longer always true and signs are determined in good agreement with the *original* generative model.  
+
+In the third case, lack of significant correlation among the two predictors, and the peculiar generative process, makes the specific determination of the sign of the slope for `x2` dominated by random noise. Additionally, such coefficients do not differ much among the *one-* and the *two-* variable models. This last observation is further put in evidence by the last (3rd) row of partial residual plots. Indeed, we can see that there is no significant difference in the mean of the partial residuals around `x2` between the full and the censored model.
+
+```{r andre_8}
+par(mfrow=c(1,3))
+termplot(y.lm, partial.resid=TRUE, smooth=panel.smooth,
+         col.res="gray30",main = "y ~ factor(x2)", ylim = c(-3,2))
+termplot(y.lm2, partial.resid=TRUE, smooth=panel.smooth,
+         col.res="gray30",main = "y ~ x1 + factor(x2)",ylim = c(-3,2))
+```
+
+```{r andre_9}
+par(mfrow=c(1,3))
+termplot(y_1.lm, partial.resid=TRUE, smooth=panel.smooth,
+         col.res="blue",main = "y_1 ~ factor(x2_1)",ylim = c(-3,2))
+termplot(y_1.lm2, partial.resid=TRUE, smooth=panel.smooth,
+         col.res="blue",main = "y_1 ~ x1 + factor(x2_1)",ylim = c(-3,2))
+
+```
+
+```{r andre_10}
+par(mfrow=c(1,3))
+termplot(y_2.lm, partial.resid=TRUE, smooth=panel.smooth,
+         col.res="green",main = "y_2 ~ factor(x2_2)",ylim = c(-3,2))
+
+termplot(y_2.lm2, partial.resid=TRUE, smooth=panel.smooth,
+         col.res="green",main = "y ~ x1_2 + factor(x2_2)",ylim = c(-3,2))
+```
+
+
+# Exercises from *DAAG, Chapter 8* 
+
+## Exercise 1
+
+### Text
+
+It is given as a dataset the numbers of occasions when inhibition (i.e. no flow of current across a membrane) occurred within $120$s, for different concentrations of the protein *peptide-C* (data are used with the permission of Claudia Haarmann, who obtained these data in the course of her PhD research). The outcome `yes` implies that inhibition has occurred.  
+Use logistic regression to model the probability of inhibition as a function of protein concentration.
+
+
+### Solution
+```{r daag08_01, code = readLines("src/DAAG_08_01.R"), echo=TRUE}
+```
+
+### Comments
+
+Following an *orthodox interpretation* of the exercise text, we are required to fit a *logistic model* that tries to explain or predict the probability of inhibition as a function of concentration -- assuming that the counts shown in the datatable refer to different, independent $120\text{s}$-long observations.  
+
+Upon visual analysis of the scatterplot of the data, it appears that a global trend in the data is hard to be noticed -- or anyway extremely difficult to model in functional form --, and both *up-* and *down-swinging* trends are present as the concentration increases (apart from the last point, which is the highest in probability of the whole dataset).  
+
+The best we can do in this case is to fit a *logistic regression* model on untransformed data, directly for the continuous variable that computes the probability of inhibition, using the total number of *yes/no* observations per concentration as logistic regression weights.  
+
+The result is acceptable, but still corrupted by noise.  
+
+
+## Exercise 2
+
+### Text
+
+In the dataset (an artificial one of $3121$ patients, that is similar to a subset of the data analyzed in *Stiell et al., 2001*) `minor.head.injury`, obtain a *logistic regression model* relating `clinically.important.brain.injury` to the other variables. Patients whose risk is sufficiently high will be sent for CT. Using a risk threshold of $0.025$ ($2.5\%$), turn the result into a decision rule for use of CT.
+
+### Solution
+
+```{r daag08_02, code = readLines("src/DAAG_08_02.R"), echo=TRUE}
+```
+
+### Comments
+
+Almost all of the variables used as predictors are highly significant according to their *coefficient p-values*, with -- in any case -- some differences w.r.t. their overall relevance for the final result.
+
+The difference between the *null model* and the *full* one is large, positively suggesting its effective use.
+
+Finally, a table is provided to summarize the estimated coefficients and the patient information; additionally, another table is provided to compare symptoms, risk level for each patient, and the model-predicted decision whether to sent them for a CT check.  
+
+In order to *operationalize* such model and provide a simple decision rule for *emergency unit* responders, it is possible to transform the *logistic model* in a *linearly-predicted logit model* operating at fixed probability cutoff.  
+
+Since all the predictors are binary variables carrying information about the presence ($1$) or not ($0$) of a given symptom, it is possible to assign to each symptom a *score* corresponding to their model *multiplicative coefficient*. Finally, the *ER* unit workers just need to sum all the symptom scores according to their presence in a given patient showing the hospital. 
+
+If the overall sum exceeds a precomputed threshold, the patient needs to be sent to CT.  
+
+Such threshold $T_p$ depends on the risk cutoff $p$ in that:
+$$
+T_p = \text{logit}(p) \ - \ \text{model intercept} \ = \ \text{log}\left(\frac{p}{1-p}\right) - \ \text{model intercept}
+$$  
+
+For our model, at $p = 0.025$, $T_p = 4.4972 - 3.6635 = 0.8337$. Coefficients are shown in the tables adove.
+
+## Exercise 3
+
+### Text
+
+Consider again the $\mathsf{moths}$ dataset of *Section 8.4*.
+
+(a) What happens to the standard error estimates when the *Poisson* family is used in $\mathsf{glm()}$ instead of the *Quasi-Poisson* family?  
+(b) Analyze the *P moths*, in the same way as the *A moths* were analyzed. Comment on the effect of transect length.  
+
+
+### Solution
+```{r daag08_03, code = readLines("src/DAAG_08_03.R"), echo=TRUE}
+```
+
+### Comments
+
+(a) As we can see from the printed results -- and as also noted in *Exercise DAAG 8.6* -- standard error intervals estimated from a *Poisson regression* model are narrower w.r.t. *Quasi-Poisson* ones. This can be explained as a positive dispersion coefficient (like the one estimated in this case for the *quasi-Poisson* model) inflates error bounds.
+
+(b) [*paragraphs that follow*]  
+
+By omitting the portions of data analysis directly determined by the observed $0$-count for the *Bank* habitat (in the case of *A moths*), the analysis is compact and contained in the code snipped above.  
+
+With a difference w.r.t. the analysis shown in the book, the reference level among different habitats has been chosen in order to maximize overall significance for the coefficients in the linear model contained in the *(quasi-)Poisson* one. Since no clear dominance exists in such choice, the closest to Pareto-front has been chosen (symplex-area method). Regardless of such criterion, all observations contained in the following are invariant to such choice.  
+
+From the summary of the fitted GLM we can observe that the $log(\text{length})$ term has a significant coefficient ($p < 0.004$). The effect of transect length on moth count is therefore relevant (definitely more relevant in comparison to the *A moths*). This can show that -- w.r.t. *A moths*, *P moths* enjoy longer flights and/or pass significantly many (more) times across transects during their aerial wanderings.
+
+
+
+## Exercise 6
+
+### Text
+
+The function $\mathsf{poissonsim()}$ allows for experimentation with *Poisson regression*.  
+In particular, $\mathsf{poissonsim()}$ can be used to simulate Poisson responses with *log-rates* equal to $a + bx$, where $a$ and $b$ are fixed values by default.  
+
+(a) Simulate $100$ Poisson responses using the model $log( \lambda) = 2 − 4x$ for $x = 0, 0.01, 0.02,\dots, 1.0$.  
+Fit a Poisson regression model to these data, and compare the estimated coefficients with the true coefficients. How well does the estimated model predict future observations?  
+
+(b) Simulate $100$ Poisson responses using the model $log( \lambda) = 2 − bx$ where $b$ is normally distributed with mean $4$ and standard deviation $5$. [Use the argument $\mathsf{slope.sd=5}$ in the $\mathsf{poissonsim()}$ function.] How do the results using the poisson and quasipoisson families differ?
+
+### Solution
+```{r daag08_06, code = readLines("src/DAAG_08_06.R"), echo=TRUE}
+```
+
+### Comments
+
+(a) [*paragraphs that follow*]  
+
+Preliminarily to a more *in-depth* analysis, it is worth noting that -- w.r.t. to the point we are currently answering to -- we are performing a *Poisson regression* fit to data generated according to a *Poisson regression* generative model.  
+
+Far from being *that* obvious, this allows us to preliminarily state that what we are trying to accomplish is *a posteriori* (information-theoretically) the most efficient fitting procedure to predict the expected count numbers from the only available predictor ($x$) of the synthetic phenomenon we are dealing with.  
+
+A more precise consistency check involves the analysis of the *standard error* estimates (obtained by the means of the integrated fitting routine $\mathsf{glm}$) and *approximated-normal confidence intervals* obtained via *profile likelihood estimation* thanks to the `MASS::confint()` function.
+
+As we can see from the results shown above, the estimated coefficients are always included in the $95\%$ symmetric C.I.s around the estimate. This is also true for the $\text{estimate}\ \pm\ SE$ interval for the slope coefficient and sometimes also for the intercept. In cases the latter is not, anyway, the difference is always of minor entity (and concern).  
+
+To analyze the robustness of the fitted model for $x \rightarrow +\infty$ (i.e. *future values*) it is possible to study the (estimated) rate $\hat{\lambda}$ of the (estimated) Poisson distribution from which we assume our counts to be sampled from.  
+
+In fact, $\hat{\lambda} = e^{\hat{a} + x\hat{b}}$, and it is sufficient to consider that $\hat{a} > 0$ and $\hat{b} < 0$ for now. Furthermore, as $x \rightarrow +\infty, \ \hat{\lambda} \rightarrow 0$ and $E_{pois}[\text{counts}] \propto \lambda$.  
+
+From that -- or also via *interval-bound propagation* -- it is possible to show that, as long as the previous inequalities hold true, the difference in predicted counts converges to zero as $x \rightarrow +\infty$ regardless of the specific value of the estimated parameters $\hat{a} > 0$ and $\hat{b} < 0$. This makes *future* estimations robust to stochastic noise.  
+
+
+(b) [*paragraphs that follow*]  
+
+As far as the second phenomenon and model are concerned, the following are the similarities and differences among the *Poisson-family* and *Quasi-Poisson family* regressions.  
+
+- As expected, point-estimates for the *(quasi-)Poisson regression* coefficients are the same in both cases, since *Quasi-Poisson* regression model is the *quasi-likelihood* model associated to the *Poisson* one, with non-locked dispersion;
+
+- Both the confidence intervals and the standard errors shown for the *Quasi-Poisson* model are broader w.r.t. the *Poisson* ones;
+
+- The *AIC* is not shown for the *Quasi-Poisson* model. Settling a seemingly popular debate, such behaviour is a design choice of *R Core Team* for any *quasi-likelihood* model fitted using the $\mathsf{glm}$ function.  
+
+Overall, it can be said that *Quasi-Poisson* regression accounts for (in this case) increased dispersion of the data via broadening of C.I.s.
+
+<!-- LEAVE A NEWLINE AT THE END-OF-FILE! -->

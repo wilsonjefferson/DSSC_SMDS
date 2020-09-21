@@ -1,0 +1,26 @@
+---
+title: "homework_03"
+output: html_document
+---
+
+## Exercise 7
+
+Remining that a prior distribution is our prior belief on the $\lambda$ paramenter, we may observe the following notes:
+
+1. The Beta distribution is a continuous distribution but his support is defined on the range $[0, 1]$, and means to consider the everage time in days or more that is not realistic.So, it is not convinient to use it because $\lambda$ belongs to the range $[0, +\infty)$. Moreover, the Beta distribution is usually associated with the Bernoulli distribution.
+
+2. The Normal distribution is a continuous distribution and it considers a larger set of values in respect to the Beta distribution but, also in this case, it is not a suitable prior distribution for $\lambda$ because it is defined on the range $(-\infty, +\infty)$, so it allows negative values that are not acceptable for $\lambda$.
+
+3. The Gamma distribution is a continuous distribution defined on the range $[0, +\infty)$, so it is well defined for the $\lambda$ parameter. Moreover, if the likelihood is rapresented by a Poisson distribution (like in this case), the Gamma distribution is not just a prior distribution but it is a conjugate prior. It means the posterior and the prior distributions belong to the same probability distribution family and this is great because we are able to analitically compute the posterior distribution.
+
+As a final thought, we may also consider times and computational costs: the gamma as posterior distribution is a well known distribution while the posteriors given by the others priors force to use the MCMC algorithm and it might be expensive and gives an approximately solution.
+
+We may consider a general case in which we have a Poisson model $X_1, X_2, \dots, X_n$ ~ $Poisson(\lambda)$ where $X_1, X_2, \dots, X_n$ are iid. While as a prior distribution suppose to have a $Gamma(\alpha, \beta)$. Then, the posterior distribution is defined as follows:
+
+$p(\lambda | X) \propto p(X | \lambda) \cdot p(\lambda)$
+$\propto \prod_{i = 1}^{n}(\frac{\lambda^{x_i} \cdot e^{-\lambda}}{x_i !}) \cdot \frac{\beta^\alpha}{\Gamma(\alpha)} \cdot \lambda^{\alpha - 1} \cdot e^{\beta \cdot \lambda}$
+$\propto \prod_{i = 1}^{n}(\lambda^{x_i}) \cdot e^{-n \cdot \lambda} \cdot \lambda^{\alpha - 1} \cdot e^{\beta \cdot \lambda} = \lambda^{(s + \alpha) - 1} \cdot e^{-(n + \beta) \cdot \lambda}$
+
+Where we have not compute the normalization constant and we ignored constants that do not depend on $\lambda$.
+So, the posterior distribution belongs to a gamma distribution $Gamma(s + \alpha, n \cdot \beta)$ in which $s = x_1 + x_2 + \cdots + x_n$; in the our specific case the posterior distribution belongs to a $Gamma(s + 4, 15 \cdot 2)$.
+

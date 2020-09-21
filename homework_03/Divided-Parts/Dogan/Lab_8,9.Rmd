@@ -1,0 +1,285 @@
+---
+title: "Homework 3 - Group B"
+author: "Abdalghani, Zambon, Morichetti, Demirbilek"
+#output: html_notebook
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: united
+    highlight: tango
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = 'center', warning=FALSE, message=FALSE)
+```
+
+# LAB: **Laboratory**
+
+## Exercise 8
+**Go to this link: [rstan](https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started), and follow the instructions to download and install the `rstan` library. Once you did it succesfully, open the file model called `biparametric.stan`, and replace the line:**
+
+`target+ = cauchy_lpdf(sigma | 0, 2.5);`
+
+**with the following one:**
+
+`target+ = uniform_lpdf(sigma | 0.1, 10);`
+
+**Which prior are you now assuming for your parameter**$\sigma$**? Reproduce the same plots as above and briefly comment. **
+
+**Solution:**
+
+We are assuming uniform distribution for parameter $\sigma$ such that $\sigma \sim \text{Unif}(0.1,10)$.
+
+```{r echo=TRUE,  message=FALSE, warning=FALSE}
+library("bayesplot")
+library("rstan")
+library("ggplot2")
+
+theta_sample <- 2
+sigma2 <- 2
+n <- 10
+y <- rnorm(n,theta_sample, sqrt(sigma2))
+
+data <- list(N=n, y=y, a=-10, b=10)
+fit <- stan(file ="biparametric.stan", data = data , chains = 4, iter=2000, refresh=-1)
+sim <- extract(fit)
+posterior_biv <- as.matrix(fit)
+
+theta_est <- mean(sim$theta)
+theta_var <- var(sim$theta)
+sigma_est <- mean(sim$sigma)
+sigma_var <- var(sim$sigma)
+c(theta_est,theta_var, sigma_est,sigma_var)
+traceplot(fit, pars=c("theta", "sigma"))
+
+plot_title <- ggtitle("Posterior distributions",
+                      "with medians and 80% intervals")
+
+mcmc_areas(posterior_biv, 
+           pars = c("theta","sigma"), 
+           prob = 0.8) + plot_title
+
+```
+
+From the traceplot, we can easily say that chains are converged meaning they run around some values of the parameter space. There is no significant difference between old and new posterior distribution plots so we may say that prior distributions don't provide much information about posterior distributions.
+
+ 
+## Exercise 9
+**Reproduce the first plot above for the soccer goals, but this time by replacing Prior 1 with a **$\text{Gamma}(2,4).$**Then, compute the final Bayes factor matrix `(BF_matrix)` with this new prior and the other ones unchanged, and comment. Is still Prior 2 favorable over all the others? **
+
+**Solution:**
+
+Likelihood and prior distributions are given in labratory file. Prior one changed from $\text{Gamma}(4.57,1.43)$ to $\text{Gamma}(2,4)$ (average $\alpha/\beta = 0.5$) and first plot reproduced below. 
+
+```{r echo=TRUE,  message=FALSE, warning=FALSE}
+library(LearnBayes)
+data(soccergoals)
+
+y <- soccergoals$goals
+
+#write the likelihood function via the gamma distribution
+
+
+lik_pois<- function(data, theta){
+  n <- length(data)
+  lambda <- exp(theta)
+  dgamma(lambda, shape =sum(data)+1, scale=1/n)
+}
+
+ prior_gamma <- function(par, theta){
+  lambda <- exp(theta)
+  dgamma(lambda, par[1], rate=par[2])*lambda  
+}
+
+ prior_norm <- function(npar, theta){
+ lambda=exp(theta)  
+ (dnorm(theta, npar[1], npar[2]))
+  
+}
+
+lik_pois_v <- Vectorize(lik_pois, "theta")
+prior_gamma_v <- Vectorize(prior_gamma, "theta")
+prior_norm_v <- Vectorize(prior_norm, "theta")
+
+
+#likelihood
+ curve(lik_pois_v(theta=x, data=y), xlim=c(-1,4), xlab=expression(theta), ylab = "density", lwd =2 )
+#prior 1
+ curve(prior_gamma_v(theta=x, par=c(2, 4)), lty =2, col="red", add = TRUE, lwd =2)
+#prior 2 
+ curve(prior_norm_v(theta=x, npar=c(1, .5)), lty =3, col="blue", add =TRUE, lwd=2)
+#prior 3 
+ curve(prior_norm_v(theta=x, npar=c(2, .5)), lty =4, col="green", add =TRUE, lwd =2)
+#prior 4 
+  curve(prior_norm_v(theta=x, npar=c(1, 2)), lty =5, col="violet", add =TRUE, lwd =2)
+  legend(2.6, 1.8, c("Lik.", "Ga(2,4)", "N(1, 0.25)", "N(2,0.25)","N(1, 4)" ),
+  lty=c(1,2,3,4,5), col=c("black", "red", "blue", "green", "violet"),lwd=2, cex=0.9)
+
+
+```
+In previous plot, `Prior 1` and `Prior 2` coincided but now they are different because of the change we made. Expected value of likelihood centered around $0.5$ and each prior offered different estimation and variance. `Prior 3` is concentrated around 2 which seems higher than other priors. `Prior 4` shows more spreaded distribution so it is the less informative one among the others. 
+
+```{r echo=TRUE,  message=FALSE, warning=FALSE}
+logpoissongamma <- function(theta, datapar){
+   data <- datapar$data
+   par <- datapar$par
+   lambda <- exp(theta)
+   log_lik <- log(lik_pois(data, theta))
+   log_prior <- log(prior_gamma(par, theta))
+   return(log_lik+log_prior)
+}
+
+logpoissongamma.v <- Vectorize( logpoissongamma, "theta")
+
+
+logpoissonnormal <- function( theta, datapar){
+ data <- datapar$data
+ npar <- datapar$par
+ lambda <- exp(theta)
+ log_lik <- log(lik_pois(data, theta))
+ log_prior <- log(prior_norm(npar, theta))
+  return(log_lik+log_prior)
+}  
+logpoissonnormal.v <- Vectorize( logpoissonnormal, "theta")
+
+#log-likelihood
+curve(log(lik_pois(y, theta=x)), xlim=c(-1,4),ylim=c(-20,2), lty =1,
+   ylab="log-posteriors", xlab=expression(theta))
+#log posterior 1
+curve(logpoissongamma.v(theta=x, list(data=y, par=c(2, 4))), col="red", xlim=c(-1,4),ylim=c(-20,2), lty =1, add =TRUE)
+#log posterior 2
+ curve(logpoissonnormal.v( theta=x, datapar <- list(data=y, par=c(1, .5))), lty =1, col="blue",  add =TRUE)
+#log posterior 3
+ curve(logpoissonnormal.v( theta=x, datapar <- list(data=y, par=c(2, .5))), lty =1, col="green", add =TRUE, lwd =2)
+#log posterior 4
+  curve(logpoissonnormal.v( theta=x, list(data=y, par=c(1, 2))), lty =1, col="violet", add =TRUE, lwd =2)
+ legend(2.6, 1.3, c( "loglik", "lpost 1", "lpost 2", "lpost 3", "lpost 4" ),
+  lty=1, col=c("black", "red", "blue", "green", "violet"),lwd=2, cex=0.9)
+```
+Curves of posterior distributions are quite similar among the each other. They are close to he log-likeligood function. The only curve stands out is the one more in constrast with likelihood. Comparasions of these models will be made by using bayes factor.
+
+```{r echo=TRUE,  message=FALSE, warning=FALSE}
+datapar <- list(data=y, par=c(2, 4))
+fit1 <- laplace(logpoissongamma, .5, datapar)
+datapar <- list(data=y, par=c(1, .5))
+fit2 <- laplace(logpoissonnormal, .5, datapar)
+datapar <- list(data=y, par=c(2, .5))
+fit3 <- laplace(logpoissonnormal, .5, datapar)
+datapar <- list(data=y, par=c(1, 2))
+fit4 <- laplace(logpoissonnormal, .5, datapar)
+
+postmode <- c(fit1$mode, fit2$mode, fit3$mode, fit4$mode )
+postsds <- sqrt(c(fit1$var, fit2$var, fit3$var, fit4$var))
+logmarg <- c(fit1$int, fit2$int, fit3$int, fit4$int)
+cbind(postmode, postsds, logmarg)
+```
+Here we found the posterior mode, log marginal likelihood and posterior standard deviations. Posterior mode of `Prior 1` is bit smaller than others. It is due to influence of the prior distribution concentrated around smaller values compared the likelihood.
+
+```{r echo=TRUE,  message=FALSE, warning=FALSE}
+BF_matrix <- matrix(1, 4,4)
+for (i in 1:3){
+  for (j in 2:4){
+   BF_matrix[i,j]<- exp(logmarg[i]-logmarg[j])
+   BF_matrix[j,i]=(1/BF_matrix[i,j]) 
+  }
+}
+
+round_bf <- round(BF_matrix,3)
+round_bf
+```
+`Prior 2` is still favored over other priors. The change that we did to `Prior 1` made negative impact and it perform worse than previous prior choice and still every prior is favored over `Prior 3`.
+
+## Exercise 10
+
+**Let $y=(1,0,0,1,0,0,0,0,0,1,0,0,1,0)$ collect the results of tossing $n=14$ times an unfair coin, where 1 denotes _heads_ and 0 _tails_, and $p=\text{Prob}(y_i=1)$.**
+
+* **Looking at the `Stan` code for the other models, write a short Stan Beta-Binomial model, where $p$ has a $\text{Beta}(a,b)$ prior with $a=3, b=3$.**
+```
+The stan file used is:
+data{
+  int N;
+  int y;
+  real<lower=0> alpha;
+  real<lower=0> beta;
+}
+
+parameters{
+  real theta;
+}
+
+model{
+  target+=binomial_lpmf(y|N, theta); 
+  target+=beta_lpdf(theta|alpha, beta);
+}
+```
+
+* **extract the posterior distribution with the function `extract()`**
+
+* **produce some plots with the `bayesplot` package and comment.**
+
+```{r echo=TRUE,  message=FALSE, warning=FALSE}
+library(LearnBayes)
+
+y=c(1,0,0,1,0,0,0,0,0,1,0,0,1,0)
+n <-  length(y)
+heads <- sum(y == 1)
+tails <- n - heads
+
+alpha = 3
+beta = 3
+
+data<- list(N=n, y=heads, alpha=alpha, beta=beta)
+fit <- stan(file="beta-binomial.stan", data = data, chains = 4, iter=2000,refresh=-1)
+#extract the Stan output
+sim <- extract(fit)
+
+summary(sim$theta)
+var(sim$theta)
+
+posterior <- as.matrix(fit)
+
+#traceplot
+traceplot(fit, pars ="theta")
+
+plot_title <- ggtitle("Posterior distributions","with medians and 80% intervals")
+
+mcmc_areas(posterior, pars = c("theta"), prob = 0.8) + plot_title
+
+```
+
+It can be observed that chains are converged, in other words they run around some values. Estimation is $0.35$ with variance $0.011$ which isn't very large. Second plot shows estimation median which is around $0.35$ with dark blue line and blue shaded area is the 80% confidence interval of median.
+
+* **compute analitically the posterior distribution and compare it with the `Stan` distribution.**
+
+Likelihood is binomial distribution with the following parameters: (H denotes heads, T denotes tails)
+$$
+\text{Bin}(H|\theta,H+T)
+$$
+Prior is beta distribution with the following parameters:
+$$
+\text{Beta}(\theta|\alpha,\beta)
+$$
+Beta distribution is conjugate prior of binomial distribution so:
+$Beta(\alpha,\beta)$ prior and $x\sim Bin(n,\pi)$ likelihood result in the posterior
+
+\begin{align}
+p(\pi|x,\alpha,\beta)&\propto \pi^x (1-\pi)^{n-x} \pi^{\alpha-1}(1-\pi)^{\beta-1}\\
+                     &\propto \pi^{x+\alpha-1}(1-\pi)^{n-x+\beta-1}
+\end{align}
+
+which is a $Beta(x+\alpha, n-x+\beta)$.
+
+So likelihood is:
+$$
+p(\theta|H+T) \propto \text{Bin}(H|\theta,H+T) \times \text{Beta}(\theta|\alpha,\beta) \propto \text{Beta}(\theta|\alpha + H, \beta + T)
+$$
+Since we know that $H = 4$, $T=10$ and $\alpha=3$, $\beta=3$, we have $\text{Beta}(7,13)$
+
+```{r echo=TRUE,  message=FALSE, warning=FALSE}
+curve(dbeta(x,alpha,beta), xlim=c(-0.25,1.25), ylim= c(0,4), lwd =2,ylab = "Density", xlab = expression(theta))
+curve(dbeta(x,alpha+4,beta+10), lty =2, col="red", add=TRUE,lwd=2)
+lines(density(sim$theta, adj=2),lty=2, col="blue", add=TRUE)
+legend(0.8,3.5,c("Prior", "True Posterior","Stan Posterior"), c("black", "red","blue"))
+
+```
+As we can understand from the plot, true posterior and stand posterior quite close to each other.

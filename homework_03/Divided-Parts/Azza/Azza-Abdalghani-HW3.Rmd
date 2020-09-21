@@ -1,0 +1,209 @@
+---
+title: "Homework 3, Group B"
+author: "Abdalghani, Demirbilek, Morichetti, Zambon"
+date: "Spring 2020"
+output:
+  html_document:
+    toc: yes
+  beamer_presentation:
+    highlight: tango
+  include: null
+  ioslides_presentation:
+    highlight: tango
+  pdf_document:
+    highlight: tango
+    keep_tex: yes
+    toc: yes
+  slide_level: 2
+  slidy_presentation:
+    fig.height: 3
+    fig.width: 4
+    highlight: tango
+header-includes:
+- \usepackage{color}
+- \definecolor{Purple}{HTML}{911146}
+- \definecolor{Orange}{HTML}{CF4A30}
+- \setbeamercolor{alerted text}{fg=Orange}
+- \setbeamercolor{frametitle}{bg=Purple}
+institute: University of Udine & University of Trieste
+graphics: yes
+fontsize: 10pt
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.align = 'center', warning=FALSE, message=FALSE, fig.asp=0.625, dev='png', global.par = TRUE, dev.args=list(pointsize=10), fig.path = 'figs/')
+library(MASS)
+```
+```{r setup, include=FALSE}
+library(knitr)
+local({
+  hook_plot = knit_hooks$get('plot')
+  knit_hooks$set(plot = function(x, options) {
+    paste0('\n\n----\n\n', hook_plot(x, options))
+  })
+})
+```
+
+
+## LEC
+### Exercise 1
+
+Compute the bootstrap-based confidence interval for the $score$ dataset using the studentized method.
+
+
+*solution :*
+
+
+
+```{r basic 1, echo=TRUE}
+#loading data 
+score <- read.table("student_score.txt", header = TRUE)
+
+# function fo compute the parameter of interest --> eignratio 
+psi_fun <- function(data) {eig <- eigen(cor(data))$values
+                           return(max(eig) / sum(eig))}
+psi_obs <- psi_fun(score)
+#psi_obs
+
+# estimate the bootstrap-based standard error, SE_boot:
+# and estimate the Standard error from each bootstrap sample using jackknife: 
+n <- nrow(score) 
+B <- 10^4
+s_vect <- rep(0,B)
+SE_jack <- rep(0,B)
+s_tmp <- rep(0, n)
+
+
+for(i in 1:B) 
+{
+  ind <- sample(1:n, n, replace = TRUE)
+  s_vect[i] <- psi_fun(score[ind,])
+  for(j in 1:n) {s_tmp[j] <- psi_fun(score[ind,][-j,])}
+  SE_jack[i] <- sqrt(((n - 1)/n) * sum((s_tmp - mean(s_tmp))^2))
+  
+}
+```
+
+```{r basic 2, echo=TRUE}
+
+SE_boot <- sd(s_vect)
+wald_ci <- psi_obs + c(-1, 1) * 1.96 * SE_boot 
+print("Wald-type confidence interval :")
+wald_ci
+
+hist.scott(s_vect, main = "Wald-type CI")
+abline(v = psi_obs, col = 2)
+abline(v = wald_ci, col = "blue")
+
+
+#percentile method : 
+perc_ci <- quantile(s_vect, prob=c(0.025, 0.975))
+attr(perc_ci, "names") <- NULL
+perc_ci
+hist.scott(s_vect, main = "Percentile method")
+abline(v = psi_obs, col = 2)
+abline(v = perc_ci, col = "blue")
+
+
+#studentized Method
+z_vect <- (s_vect - psi_obs)/SE_jack
+
+#studentized bootstrap confidence interval :
+stud_ci <- psi_obs - SE_boot * quantile(z_vect, prob=c(0.975, 0.025))
+attr(stud_ci, "names") <- NULL 
+print("Studentized bootstrap confidence interval :")
+stud_ci
+hist.scott(s_vect, main = "Studentized method")
+abline(v = psi_obs, col = 2)
+abline(v = stud_ci, col = "blue")
+
+```
+
+Comparing the Studentized bootstrap confidence interval and the Wald-type interval, and taking the point estimate as a reference, as given in the lecture the percentile confidence interval is wider on the left side and shorter on the right side. However, the studentized bootstrap confidence interval is wider on both sides (left and right).
+
+
+### Exercise 2
+
+Compute bootstrap-based confidence intervals for the $score$ dataset using the $boot$ package.
+
+
+*solution :*
+
+```{r basic 3, echo=TRUE}
+library(boot)
+
+psi_fun_boot = function(x, indices){
+  data <- x[indices,]
+  eig <- eigen(cor(data))$values
+  return(max(eig) / sum(eig))
+}
+
+#bootstrap variances needed for studentized intervals
+psi_fun_boot_var = function(x, indices){
+  data <- x[indices,]
+  b <- boot(score, psi_fun_boot, 100)
+  eig <- eigen(cor(data))$values
+  return(c(max(eig) / sum(eig), var(b$t)))
+}
+
+score <- read.table("student_score.txt", header = TRUE)
+boot_results <- boot(score, psi_fun_boot, 1000)
+boot.ci(boot.out = boot_results, , type = c("perc","basic"))
+
+boot_var_results <- boot(score, psi_fun_boot_var, 1000)
+boot.ci(boot.out = boot_var_results, type = "stud")
+
+```
+
+
+
+### Lab : Exercise 10
+
+Let y=(1,0,0,1,0,0,0,0,0,1,0,0,1,0) collect the results of tossing n=14 times an unfair coin, where 1 denotes heads and 0 tails, and p=Prob(yi=1). 
+
+
+1. Looking at the Stan code for the other models, write a short Stan Beta-Binomial model, where p has a Beta(a,b) prior with a=3, b=3.
+
+
+Beta-Binomial.stan file is : 
+```
+data{
+  int N;
+  int y;
+  real<lower=0> alpha;
+  real<lower=0> beta;
+}
+parameters{
+  real p;
+}
+model{
+  target+=binomial_lpmf(y|N, p);
+  target+=beta_lpdf(p|alpha,beta);
+}
+
+```
+
+2.extract the posterior distribution with the function  extract().
+
+
+```{r basic 10, echo=TRUE }
+library(rstan)
+y <- c(1,0,0,1,0,0,0,0,0,1,0,0,1,0)
+n <- length(y)
+
+
+alpha <- 3 
+beta <- 3 
+
+
+data <- list(N=n , y=sum(y), alpha = 3, beta = 3)
+fit <- stan(file = "Beta-Binomial.stan", data = data, chains = 4, iter = 2000)
+
+sim <- extract(fit)
+```
+
+
+
+
+
+
+

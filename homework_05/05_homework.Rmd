@@ -1,0 +1,459 @@
+---
+title: "SMDS Homework - Block 5"
+author: "A. Carraro, P. Morichetti, and E. Ballarin  |  Group 'E'"
+date: "22nd June 2020"
+output:
+  html_document:
+    theme: darkly
+    highlight: breezedark
+    mathjax: default
+    self_contained: true
+    md_extensions: +autolink_bare_uris
+    toc: true
+    toc_collapsed: false
+    toc_float: true
+    toc_depth: 3
+    number_sections: false
+header-includes:
+- \usepackage{color}
+- \usepackage{graphicx}
+- \usepackage{grffile}
+institute: University of Trieste, SISSA, ICTP, University of Udine
+graphics: yes
+fontsize: 10pt
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.align = 'center', warning=FALSE, message=FALSE, fig.asp=0.625, dev='png', global.par = TRUE, dev.args=list(pointsize=10), fig.path = 'figs/')
+```
+
+```{r setup, include=FALSE}
+library(knitr)
+local({
+  hook_plot = knit_hooks$get('plot')
+  knit_hooks$set(plot = function(x, options) {
+    paste0('\n\n----\n\n', hook_plot(x, options))
+  })
+})
+```
+
+
+
+# Exercises from *CS*
+
+## Exercise 1.3
+
+### Text
+
+Suppose that
+
+$$
+\boldsymbol{Y} \sim \mathcal{N} \left( \begin{bmatrix} 1\\ 2 \end{bmatrix} , \begin{bmatrix} 2 & 1\\ 1 & 2 \end{bmatrix} \right) \ .
+$$
+
+Find the conditional *p.d.f.* of $Y_1$, given that $Y_1 + Y_2 = 3$.
+
+
+### Solution
+
+We have that $\boldsymbol{Y} = (Y_1, Y_2)$, so $\boldsymbol{y} = (y_1, y_2)$, $\boldsymbol{\mu} = (E(Y_1), E(Y_2)) = \begin{bmatrix} 1\\ 2 \end{bmatrix}$ and $\boldsymbol{\Sigma} = \begin{bmatrix} Var(Y_1) & Cov(Y_1, Y_2) \\ Cov(Y_2, Y_1) & Var(Y_2) \end{bmatrix} = \begin{bmatrix} 2 & 1\\ 1 & 2 \end{bmatrix}$.
+
+We compute
+
+$$
+\det(\boldsymbol\Sigma) = \begin{vmatrix} 2 & 1\\ 1 & 2 \end{vmatrix} = 2\cdot 2 - 1\cdot 1 = 4 - 1 = 3
+$$
+and
+$$
+\boldsymbol\Sigma^{-1} = \begin{bmatrix} 2 & 1\\ 1 & 2 \end{bmatrix}^{-1} = \begin{bmatrix} 2/3 & -1/3 \\ -1/3 & 2/3 \end{bmatrix}
+$$
+so
+$$
+\begin{align*}
+(\boldsymbol y - \boldsymbol\mu)^T \boldsymbol\Sigma^{-1} (\boldsymbol y - \boldsymbol\mu) &= \begin{bmatrix} y_1 - 1, y_2 - 2 \end{bmatrix} \begin{bmatrix} 2 & 1\\ 1 & 2 \end{bmatrix}^{-1} \begin{bmatrix} y_1 - 1 \\ y_2 - 2 \end{bmatrix} \\
+&= \begin{bmatrix} y_1 - 1, y_2 - 2 \end{bmatrix} \begin{bmatrix} 2/3 & -1/3 \\ -1/3 & 2/3 \end{bmatrix} \begin{bmatrix} y_1 - 1 \\ y_2 - 2 \end{bmatrix} \\
+&=  \begin{bmatrix} \frac23 y_1 - \frac13 y_2 & -\frac13 y_1 + \frac23 y_2 -1 \end{bmatrix} \begin{bmatrix} y_1 - 1 \\ y_2 - 2 \end{bmatrix} \\
+&= \frac23 (y_1^2 - y_1y_2 - 3y_2+ y_2^2 + 3) \\
+&= \frac23 \left(y_1 - \frac{y_2}2 \right)^2 + \frac12 (y_2 - 2)^2
+\end{align*}
+$$
+So we have that the joint distribution is
+
+$$
+\begin{align*}
+f(\boldsymbol y = (y_1, y_2)) &= \frac1{\sqrt{(2 \pi)^2 \cdot \det(\boldsymbol\Sigma)}} \exp \left( -\frac12 (\boldsymbol y - \boldsymbol\mu)^T \boldsymbol\Sigma^{-1} (\boldsymbol y - \boldsymbol\mu) \right)\\
+&= \frac1{\sqrt{(2 \pi)^2 \cdot 3}} \exp \left( -\frac12 \cdot \frac23 (y_1^2 - y_1y_2 - 3y_2+ y_2^2 + 3) \right)
+\end{align*}
+$$
+Then the marginal distribution of $Y_2$ is
+
+$$
+\begin{align*}
+f_2(y_2) &= \int_{-\infty}^{+\infty} f(\boldsymbol y) dy_1 = \int_{-\infty}^{+\infty} \frac1{\sqrt{(2 \pi)^2 \cdot \det(\boldsymbol\Sigma)}} \exp \left( -\frac12 (\boldsymbol y - \boldsymbol\mu)^T \boldsymbol\Sigma^{-1} (\boldsymbol y - \boldsymbol\mu) \right) dy_1 \\
+&= \int_{-\infty}^{+\infty} \frac1{\sqrt{(2 \pi)^2 \cdot 3}} \exp \left( -\frac12 \cdot \left( \frac23 \left(y_1 - \frac{y_2}2 \right)^2 + \frac12 (y_2 - 2)^2 \right) \right) dy_1 \\
+&= \int_{-\infty}^{+\infty} \frac1{\sqrt{2 \pi}} \exp \left( -\frac12 \frac23 \left(y_1 - \frac{y_2}2 \right)^2 \right) \frac1{\sqrt{2 \pi \cdot 3}} \exp \left( -\frac12 \frac{(y_2 - 2)^2}2 \right) dy_1 \\
+&= \frac1{\sqrt{2 \pi \cdot 3}} \exp \left( -\frac12 \frac{(y_2 - 2)^2}2 \right) \sqrt{\frac32} \int_{-\infty}^{+\infty} \frac1{\sqrt{2 \pi 3/2}} \exp \left( -\frac12 \frac{(y_1 - y_2/2)^2}{3/2} \right) dy_1 \\
+&= \frac{\sqrt{3/2}}{\sqrt{2 \pi \cdot 3}} \exp \left( -\frac12 \frac{(y_2 - 2)^2}2 \right) \cdot 1 = \frac1{\sqrt{2 \pi \cdot 2}} \exp \left( -\frac12 \frac{(y_2 - 2)^2}2 \right)
+\end{align*}
+$$
+
+so $Y_2 \sim \mathcal{N}(2, 2)$. We then compute the conditional distribution of $Y_1$ given $Y_1 + Y_2 = 3$:
+
+$$
+\begin{align*}
+f_1 (y_1 \mid y_1 + y_2 = 3) &= f_1 (y_1 \mid y_2 = 3 - y_1) = \frac{f(y_1, y_2 = 3 - y_1)}{f_2(y_2 = 3 - y_1)} \\
+&= \frac{\frac1{\sqrt{(2 \pi)^2 \cdot 3}} \exp \left( -\frac12 \cdot \frac23 (y_1^2 - y_1(3 - y_1) - 3(3 - y_1) + (3 - y_1)^2 + 3) \right)}{\frac1{\sqrt{2 \pi \cdot 2}} \exp \left( -\frac12 \frac{(3 - y_1 - 2)^2}2 \right)} \\
+&= \frac1{\sqrt{2 \pi \cdot 3/2}} \exp \left( -\frac13 (y_1^2 - 3y_1 + y_1^2 - 9 + 3y_1 + 9 - 6y_1 + y_1^2 + 3) + \frac14 (1 -2 y_1 + y_1^2) \right) \\
+&= \frac1{\sqrt{3 \pi}} \exp \left( -y_1^2 + 2y_1 - 1 + \frac14 - \frac12 y_1 + \frac14 y_1^2 \right) = \frac1{\sqrt{3 \pi}} \exp \left( - \frac34 y_1^2 + \frac34 y_1 - \frac34 \right) \\
+&= \frac1{\sqrt{3 \pi}} \exp \left( - \frac34 (y_1^2 - y_1 + 1) \right) \\
+\end{align*}
+$$
+
+
+
+## Exercise 4.3
+
+### Text
+
+Random variables $\mathit{X}$ and $\mathit{Y}$ have joint *p.d.f.* $f(x,y) = kx^{\alpha}y^{\beta}$, $0 \leq x \leq 1$, $0 \leq y \leq 1$. Assume that you have $n$ independent pairs of observations $\left({ x_i, y_i }\right)$.
+
+(a) Evaluate $k$ in terms of $\alpha$ and $\beta$.
+
+(b) Find the maximum likelihood estimators of $\alpha$ and $\beta$.
+
+(c) Find approximate variances of $\hat{\alpha}$ and $\hat{\beta}$.
+
+
+### Solution
+
+a. To calculate the $k$ parameter we just need to compute the integral of the joint distribution function $f$ over the $x$ and $y$ domains, than set the result equal to $1$ in order to enforce normalization.
+$$
+\begin{align*}
+1 &= \int_{0}^{1} \left (\int_{0}^{1} f(x, y) dx \right) dy
+= \int_{0}^{1} \left (\int_{0}^{1} k \cdot x^{\alpha} \cdot y^{\beta} dx \right) dy \\
+&= k \cdot \int_{0}^{1} y^{\beta} \cdot \int_{0}^{1} (x^{\alpha} dx) dy
+= k \cdot \int_{0}^{1} y^{\beta} \cdot \left [\frac{x^{\alpha + 1}}{\alpha + 1} \right ]_{0}^{1} dy \\
+& = k \cdot \int_{0}^{1} y^{\beta} \cdot \left (\frac{1}{\alpha + 1} \right) dy
+= \frac{k}{\alpha + 1} \cdot \int_{0}^{1} y^{\beta} dy \\
+&= \frac{k}{(\alpha + 1) \cdot (\beta + 1)}
+\end{align*}
+$$
+So we can compute $k$:
+$$
+\frac{k}{(\alpha + 1) \cdot (\beta + 1)} = 1 \quad \Longrightarrow \quad k = (\alpha + 1) \cdot (\beta + 1)
+$$
+if $\alpha \neq 1$ and $\beta \neq 1$.
+
+b. To calculate the maximum likelihood estimators for $\alpha$ and $\beta$ we have to calculate the likelihood function.
+$$
+L(\theta) = \prod_{i = 1}^{n} ((\alpha + 1)(\beta + 1) \cdot x_{i}^{\alpha} \cdot y_{i}^{\beta})
+$$
+We transform it into the log-likelihood function because it is more suitable for our purposes:
+$$
+\begin{align*}
+l(\theta) &= \sum_{i = 1}^{n} (\log((\alpha + 1)(\beta + 1) \cdot x_{i}^{\alpha} \cdot y_{i}^{\beta})) \\
+&= n \cdot \log((\alpha + 1)(\beta + 1)) + \sum_{i = 1}^{n} (\log(x_{i}^{\alpha}) + \log(y_{i}^{\beta})) \\
+&= n \cdot \log((\alpha + 1)(\beta + 1)) + \sum_{i = 1}^{n} (\alpha \cdot \log(x_{i}) + \beta \cdot \log(y_{i})) \\
+&= n \cdot \log((\alpha + 1)(\beta + 1)) + \sum_{i = 1}^{n} \alpha \cdot \log(x_{i}) + \sum_{i = 1}^{n} \beta \cdot \log( y_{i}) \\
+&= n \cdot \log((\alpha + 1)(\beta + 1)) + \alpha \cdot \sum_{i = 1}^{n} \log(x_{i}) + \beta \cdot \sum_{i = 1}^{n} \log( y_{i})
+\end{align*}
+$$
+Now we can compute the first derivatives and obtain the estimators:
+$$
+\frac{\partial l(\theta)}{\partial \alpha} = \frac{n}{\alpha + 1} + \sum_{i = 1}^{n} \log(x_{i}); \\
+\frac{\partial l(\theta)}{\partial \beta} = \frac{n}{\beta + 1} + \sum_{i = 1}^{n} \log(y_{i})
+$$
+Setting to zero the previous derivatives we obtain the maximum likelihood estimators of $\alpha$ and $\beta$:
+$$
+\frac{\partial l(\theta)}{\partial \alpha} = 0 \rightarrow \hat{\alpha} = \frac{-n}{\sum_{i = 1}^{n} \log(x_{i})} - 1 \\
+\frac{\partial l(\theta)}{\partial \beta} = 0 \rightarrow \hat{\beta} = \frac{-n}{\sum_{i = 1}^{n} \log(y_{i})} - 1
+$$
+if there exist at least both an $x_{i}$ and a $y_{i}$ not equal to one.
+
+c. To calculate the variances for the estimated parameters we need to compute the Fisher Information Matrix, but, first of all, we compute the Hessian matrix of the log-likelihood function.
+$$
+\frac{\partial l(\theta)^{2}}{\partial^{2} \alpha} = \frac{-n}{(\alpha + 1)^{2}} \\
+\frac{\partial l(\theta)^{2}}{\partial^{2} \beta} = \frac{-n}{(\beta + 1)^{2}} \\
+\frac{\partial l(\theta)^{2}}{\partial \alpha \partial \beta} = \frac{\partial l(\theta)^{2}}{\partial \beta \partial \alpha} = 0
+$$
+We may rapresent it in more compact way by using the Hessian Matrix:
+$$
+H(\theta) = \begin{bmatrix} \frac{-n}{(\alpha + 1)^{2}} & 0 \\ 0 & \frac{-n}{(\beta + 1)^{2}} \end{bmatrix}
+$$
+Then, we compute the Observed Information Matrix as follows:
+$$
+J(\theta) = - H(\theta) = \begin{bmatrix} \frac{n}{(\alpha + 1)^{2}} & 0 \\ 0 & \frac{n}{(\beta + 1)^{2}} \end{bmatrix}
+$$
+In the end we compute the Fisher Information Matrix:
+$$
+I(\theta) = E\{J(\theta)\} = \begin{bmatrix} \frac{n}{(\alpha + 1)^{2}} & 0 \\ 0 & \frac{n}{(\beta + 1)^{2}} \end{bmatrix}
+$$
+As we can see this matrix is still a symmetric and square matrix, moreover the elements on the secondary diagonal are zeros so it means that $\alpha$ and $\beta$ are asymptotically uncorrelated. So, the variances for our paramters are defined as follows:
+$$
+Var(\hat{\theta}) = \frac{1}{I(\theta)} = \begin{bmatrix} \frac{n}{(\alpha + 1)^{2}} & 0 \\ 0 & \frac{n}{(\beta + 1)^{2}} \end{bmatrix}
+$$
+In particular, $I(\theta) = \frac{1}{I(\theta)}$, or another way to compute them is throught the SE statistic, and it is computed directly by using $I(\theta)$.
+
+
+# Exercises from *DAAG*
+
+## Exercise 4.5
+
+### Text
+
+The following code draws, in a $2 \times 2$ layout, $10$ boxplots of random samples of $1000$ from a normal distribution, $10$ boxplots of random samples of $1000$ from a $t$-distribution with $7$ *d.f.*, $10$ boxplots of random samples of $200$ from a normal distribution, and $10$ boxplots of random samples of $200$ from a $t$-distribution with $7$ *d.f.*:
+
+```{r daag_04_05_text_01, echo=TRUE}
+set.seed(151)
+oldpar <- par(mfrow=c(2,2))
+
+tenfold1000 <- rep(1:10, rep(1000,10))
+
+boxplot(split(rnorm(1000*10), tenfold1000), ylab="normal - 1000")
+boxplot(split(rt(1000*10, 7), tenfold1000),
+    ylab=expression(t[7]*" - 1000"))
+
+tenfold100 <- rep(1:10, rep(100, 10))
+
+boxplot(split(rnorm(100*10), tenfold100), ylab="normal - 100")
+boxplot(split(rt(100*10, 7), tenfold100),
+    ylab=expression(t[7]*" - 100"))
+
+par(oldpar)
+
+```
+
+Refer back to the discussion of heavy-tailed distributions in *DAAG, 3.2.2*, and comment on the different numbers and configurations of points that are flagged as possible outliers.
+
+### Comments
+
+The analisys over these boxplots follows a top-down structure. So, the first things that we may say are related with the mean. In fact each set of $10$ boxplots has, more or less, the same mean value, i.e. around $0$, but with a very small fluctuation in the $100$ samples cases. The same happens on the maximum and minimum values but with different values in case the samples come from a normal distribution or a $t$ distribution, but in this case we have to look according to which distribution the samples belong to (more details will be given later). Last comment on the overall boxplots is about the box-size defined by the quantiles: as we can see the box-size for the normal distributions is larger than the box-size for the $t$ distribution, even if we consider the set of boxplots with less samples.
+
+Now, we may say something more by looking at each of the four sets of boxes. In the top-left quarter, the max and min values are, more or less, close to $2.3$ in absolute value, and i's the same for the first and third quantiles; this is quite important because it means that this normal distribution is very symmetric.
+
+The boxplot might detect some points like possible outliers, and this is shown by the set of points outside the "whiskers"; in particular, the further they are from the first and third quantiles and more suitable they are to be outliers. Moreover, from the heavy-tailed definition we know that a general distribution is classified as an heavy-tailed if its boxplot shows some candidate outliers in both sides of the "whiskers", otherwise it is classfied as a skewed distribution (i.e. we detect some outliers in just one of the two sides).
+
+So, in this case we may suspect to deal with a heavy-tailed distribution, and more than half boxes have some plausibles outliers (i.e. they are far enough from the "whiskers").
+
+In the bottom-left quarter, max and min values are not anymore fixed as in the previous situation: now, each boxplot has its how values for them, but in any case they differ by some units. Moreover, the first and third quantiles are no more fixed in each boxes, and the "whiskers" on both sides have different distances, so this is interesting because it shows the asymmetry of the distribution with not so much samples. In this set of boxplots, we may expect to have one point as possible outlier for each box, and some of them follow this assumption but just less than half set has outliers; in addition, this set seems to be skewed. Quite the opposite than the previous one.
+
+In the top-right quarter we have a $t$ distribution and this case is very similar to the first one, but having different values for min, max and quantiles. Moreover, these parameters remain fixed and the "whiskers" have the same length, so the symmetry is respected. In the end, for what concerns possible outliers and heavy-tailed configuration we have to be careful, because most of the outside points are very close to each other and very close to the "whiskers" borders, so it is not so immediate to say something; a more deep analysis is suggested in this case.
+
+In the bottom-right quarter, things are now similar to the bottom-left quarter, so the simmetry is not anymore present and the boxes have different sizes. However, in this last case, there are more possible outliers along the different boxes, and they are more easily localized (in contrast with the previous case in which it is not true); as well as we may suppose they have a skewed structure.
+
+## Exercise 11.5
+
+### Text
+
+This exercise will compare alternative measures of accuracy from $\mathsf{randomForest()}$ runs.
+
+First, $16$ rows where data (on `V6`) is missing will be omitted:
+
+```{r daag_11_05_text_01, echo=TRUE}
+library(MASS)
+
+sapply(MASS::biopsy, function(x)sum(is.na(x)))
+biops <- na.omit(MASS::biopsy[,-1])    # Column 1 is ID
+
+## Examine list element names in randomForest object
+names(randomForest::randomForest(class~., data=biops))
+
+sapply(MASS::biopsy, function(x)sum(is.na(x)))
+biops <- na.omit(MASS::biopsy[,-1])    # Column 1 is ID
+
+## Examine list element names in randomForest object
+names(randomForest::randomForest(class~ ., data=biops))
+
+```
+
+(a) Compare repeated $\mathsf{randomForest()}$ runs:
+```{r, echo=TRUE, eval=FALSE}
+## Repeated runs, note variation in OOB accuracy.
+for(i in 1:10) {
+  biops.rf <- randomForest(class~ ., data=biops)
+  OOBerr <- mean(biops.rf$err.rate[,"OOB"])
+
+  print(paste(i, ": ", round(OOBerr, 4), sep=""))
+  print(round(biops.rf$confusion, 4))
+}
+```
+
+(b) Compare *OOB* accuracies with *test* set accuracies:
+```{r, echo=TRUE, eval=FALSE}
+## Repeated train/test splits: OOB accuracy vs test set accuracy.
+for(i in 1:10){
+  trRows <- sample(1:dim(biops)[1], size=round(dim(biops)[1]/2))
+  biops.rf <- randomForest(class~ ., data=biops[trRows, ],
+                           xtest=biops[-trRows,-10],
+                           ytest=biops[-trRows,10])
+  oobErr <- mean(biops.rf$err.rate[,"OOB"])
+  testErr <- mean(biops.rf$test$err.rate[,"Test"])
+  print(round(c(oobErr,testErr),4))
+}
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Plot test set accuracies against OOB accuracies. Add the line `y = x` to the plot. Is there any consistent difference in the accuracies? Given a random training/test split, is there any reason to expect a consistent difference between OOB accuracy and test accuracy?
+
+(c) Calculate the error rate for the training data:
+```{r, echo=TRUE, eval=FALSE}
+randomForest(class~ ., data=biops, xtest=biops[,-10],
+             ytest=biops[,10])
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Explain why use of the training data for testing leads to an error rate that is zero.
+
+### Solution
+
+(a) We compare repeated $\mathsf{randomForest()}$ runs:
+```{r daag_11_05_text_02, echo=TRUE}
+## Repeated runs, note variation in OOB accuracy.
+OOBerr <- c()
+for(i in 1:10) {
+  biops.rf  <- randomForest::randomForest(class~ ., data=biops)
+  OOBerr[i] <- mean(biops.rf$err.rate[,"OOB"])
+
+  print(paste(i, ": OOB err = ", round(OOBerr[i], 4), sep=""))
+  print(round(biops.rf$confusion, 4))
+}
+```
+```{r daag_11_05_text_02.5, echo=TRUE}
+print(paste("The mean is", round(mean(OOBerr), 5), "while the variance is", round(var(OOBerr), 9)))
+```
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; We can see that the OOB errors are more or less equal, with a mean of $0.029$ and a very little variance.
+
+(b) We compare *OOB* accuracies with *test* set accuracies:
+```{r daag_11_05_text_03, echo=TRUE}
+## Repeated train/test splits: OOB accuracy vs test set accuracy.
+oobErr <- c()
+testErr <- c()
+for(i in 1:10){
+  trRows <- sample(1:dim(biops)[1], size=round(dim(biops)[1]/2))
+
+  biops.rf <- randomForest::randomForest(class~ ., data=biops[trRows, ],
+    xtest=biops[-trRows,-10],
+    ytest=biops[-trRows,10])
+
+  oobErr[i] <- mean(biops.rf$err.rate[,"OOB"])
+  testErr[i] <- mean(biops.rf$test$err.rate[,"Test"])
+
+  print(round(c(oobErr[i],testErr[i]),4))
+}
+```
+
+```{r daag_11_05_text_03.5, echo=FALSE}
+print(paste("The mean of the OOB error is", round(mean(oobErr), 5), "while the mean of the test error is", round(mean(testErr), 5)))
+#print(paste("The variance between the two errors is", round(var(c(mean(oobErr), mean(testErr))), 6)))
+```
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; We can see that the two test errors can be quite different from each other. Nontheless, the means are quite similar.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; We plot test set accuracies against OOB accuracies, adding the line `y = x` to the plot.
+```{r daag_11_05_text_04, echo=TRUE}
+plot(oobErr,testErr, xlab="OOB error", ylab="test error", main = "Test set accuracies")
+text(x=oobErr, y=testErr, labels=seq(1, length(oobErr), 1), pos=4, offset=0.8, cex=0.8)
+abline(0, 1, col="red")
+```
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; We can see that there isn't any consistent difference in the accuracies, and given a random training/test split, there isn't any reason to expect a consistent difference between OOB accuracy and test accuracy. This is since the points in the graph are always changing position at each repetition and they don't show any pattern in the plot at all, only randomness.
+
+(c) We calculate the error rate for the training data:
+```{r daag_11_05_text_05, echo=TRUE}
+randomForest::randomForest(class~ ., data=biops, xtest=biops[,-10], ytest=biops[,10])
+```
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The use of training data for testing leads to an error rate that is zero because the model was explicitly trained to reduce at most the error between the predicted labels and the true labels of the training data. Anyway, this tells us that this model is very good at predicting the labels of this specific dataset. But it could perform poorly on another set of data, since it may be overfitting the data at our disposal. That's why the model should always be tested on data that wasn't used for the training phase.
+
+
+# Exercises from *BC*
+
+## Exercise 3.2
+
+### Text
+
+***Learning about an exponential mean***
+
+Suppose a random sample is taken from an *exponential distribution* with mean $\lambda$. If we assign the usual noninformative prior $g(\lambda) \propto \frac{1}{\lambda}$, then the posterior density is given, up to a proportionality constant, by
+$$
+g(\lambda|\text{data}) \propto \lambda^{−n−1} \ e^{−s/\lambda}
+$$
+where $n$ is the sample size and $s$ is the sum of the observations.
+
+
+a) Show that if we transform $\lambda$ to $\theta$ = $\frac{1}{\lambda}$, then $\theta$ has a *gamma density* with shape parameter $n$ and rate parameter $s$. (A gamma density with
+shape $\alpha$ and rate $\beta$ is proportional to $h(x) = x^{\alpha−1} e^{−\beta x}$.)
+
+
+b) In a life-testing illustration, five bulbs are tested with observed burn times (in hours) of
+$$751, 594, 1213, 1126, 819$$ Using the $\mathsf{R}$ function $\mathsf{rgamma}$, simulate $1000$ values from the posterior distribution of $\theta$.
+
+
+c) By transforming these simulated draws, obtain a simulated sample from the posterior distribution of $\lambda$.
+
+
+d) Estimate the posterior probability that $\lambda$ exceeds $1000$ hours.
+
+
+### Solution
+
+To begin with, in the following analysis we restrict the support of the *exponential distribution* to the *positive reals* $[0,+\infty]$, knowing that it will be otherwise constantly zero anyway.
+
+With such specification, we know that
+$$
+\text{Exp}_{\omega}(x) = \omega \ e^{-\omega x}
+$$
+with *mean* $\text{E}_x[\text{Exp}_{\omega}(x) = \omega \ e^{-\omega x}] \ = \ \frac{1}{\omega}$.
+
+Knowing that, in our case, it is given that $\text{E}_x[\text{Exp}_{\omega}(x) = \omega \ e^{-\omega x}] \ = \ \frac{1}{\omega} \ = \ \lambda$, the exponential distribution from which the samples are taken will be:
+$$
+\text{Exp}_{\frac{1}{\lambda}}(x) = \frac{1}{\lambda} \ e^{-\frac{1}{\lambda} x}
+$$
+
+#### (a)
+
+The given posterior distribution is specified, up to a proportionality constant, by the following:
+$$
+g(\lambda|\text{data}) \propto \lambda^{−n−1} \ e^{−s/\lambda}
+$$
+As per the *Theorem for the Change of Random Variables*, and by defining the *c.o.v.* $\theta = \frac{1}{\lambda} \rightarrow \lambda = \frac{1}{\theta}$, we obtain (knowing that $\theta > 0$):
+$$
+\tilde{g}(\theta|\text{data}) \propto \theta^{\ n+1} \ e^{−s\theta} \ \left|{\frac{d\theta^{-1}}{d\theta}}\right| \ = \ \theta^{\ n+1} \ e^{−s\theta} \ \left|{-\theta^{-2}}\right| \ = \ \theta^{\ n-1} \ e^{−s\theta}
+$$
+*Quod erat demonstrandum.*
+
+#### (b, c, d)
+
+```{r bc_03_02_01, echo=TRUE}
+obs <- c(751, 594, 1213, 1126, 819)    # Observations
+
+s <- sum(obs)                          # Sum of observations
+n <- length(obs)                       # Number of observations
+
+replicatesnr <- 1000                   # Number of posterior samples to draw
+
+# Posterior Thetas
+theta_sim <- rgamma(replicatesnr, shape=n, rate=s)
+hist(theta_sim, breaks=20,
+     main="Simulated Thetas",
+     xlab="sampled value",
+     ylab="occurrencies (of 1000)")
+
+# Posterior Lambdas
+lambda_sim <- 1.0/theta_sim
+hist(lambda_sim, breaks=16,
+     main="Simulated Lambdas",
+     xlab="sampled value",
+     ylab="occurrencies (of 1000)")
+
+# Estimate of lambda > 1000 | (from the 1000 samples above)
+prest_1000 <- sum(lambda_sim > 1000) / replicatesnr    # ~ 0.463
+print(prest_1000)
+
+
+# Estimate of lambda > 1000 | (from n_samples -> +infty)
+approx_infty <- 10000000
+prest_infty <- sum((1.0/rgamma(approx_infty, shape=n, rate=s)) > 1000) / approx_infty    # ~ 0.469
+print(prest_infty)
+
+```
+
+### Comments (d)
+
+From the sampling performed above, we can show that the approximation offered by the mentioned $1000$ samples from the posterior of $\lambda$ is sufficient to obtain a $<1\%$-*correct* approximation for the posterior probability that $\lambda > 1000$, being given and fixed all the available observations.
+
+<!-- LEAVE A NEWLINE AT THE END-OF-FILE! -->

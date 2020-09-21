@@ -1,0 +1,389 @@
+---
+title: "SMDS Homework - Block 2"
+author: "P. Morichetti, L. Arrighi and E. Ballarin | Group 'I'"
+date: "29th April 2020"
+output:
+  html_document:
+    toc: no
+  beamer_presentation:
+    highlight: tango
+  include: null
+  ioslides_presentation:
+    highlight: tango
+  pdf_document:
+    highlight: tango
+    keep_tex: yes
+    toc: yes
+  slide_level: 2
+  slidy_presentation:
+    fig.height: 3
+    fig.width: 4
+    highlight: tango
+header-includes:
+- \usepackage{color}
+- \usepackage{graphicx}
+- \usepackage{grffile}
+- \definecolor{Purple}{HTML}{911146}
+- \definecolor{Orange}{HTML}{CF4A30}
+- \setbeamercolor{alerted text}{fg=Orange}
+- \setbeamercolor{frametitle}{bg=Purple}
+institute: University of Trieste, SISSA, ICTP, University of Udine
+graphics: yes
+fontsize: 10pt
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.align = 'center', warning=FALSE, message=FALSE, fig.asp=0.625, dev='png', global.par = TRUE, dev.args=list(pointsize=10), fig.path = 'figs/')
+```
+
+```{r setup, include=FALSE}
+library(knitr)
+local({
+  hook_plot = knit_hooks$get('plot')
+  knit_hooks$set(plot = function(x, options) {
+    paste0('\n\n----\n\n', hook_plot(x, options))
+  })
+})
+```
+
+# Exercises: {.tabset}
+
+## LAB {.tabset}
+
+### Ex. 1 
+
+Check the *biased* nature of $s^2_b$ via MC simulation, generating $n=10$ *iid* values from a Normal distribution. Plot also $s^2$ and comment the difference.
+
+
+#### Solution
+
+```{r lab_01, code = readLines("src/lab_01.R"), echo=TRUE}
+```
+
+
+**Observations and conclusions:**  
+Form the obtained plot, we can observe that the maximums for the distributions of estimators $s^2$ and $s^2_b$ don't coincide, with $\text{max}(s^2)$ closer to the true value of $\sigma^2 = 1$. This still holds true as the sample size $n$ increases. Given the *unbiased* nature of $s^2$, we can then conclude that $s^2_b$ is a *biased* estimator. The orange line identifies the true value of $\sigma^2 = 1$.
+
+
+### Ex. 2 
+
+Let us consider a darts target divided into $K=4$ radial zones. We assign to each zone the following hitting probability:
+
+- Zone 1 (from 1 to 3 points): $p_1=\frac{7}{16}$;
+
+- Zone 2 (from 4 to 6 points); $p_2=\frac{5}{16}$;
+
+- Zone 3 (from 7 to 9 points); $p_3=\frac{3}{16}$;
+
+- Zone 4 (the highest points in the middle of the target; say: 10, 25, 50 points): $p_4=\frac{1}{16}$;
+
+The number of players is equal to $6$ and each of them throws $50$ darts, which corresponds to the number of considered observations ($n=50$ for each player). 
+
+We assume as null hypothesis: *due to a moderate control on darts skills, each friend has decreasing probabilities to hit the best zones, according to the table outlined just above* i.e.:
+$$
+H_0 : \,p_1=\frac{7}{16};\,\,\,\,p_2=\frac{5}{16};\,\,\,\,p_3=\frac{3}{16};\,\,\,\,p_4=\frac{1}{16}.
+$$
+
+We try to simulate the data and perform a *null-hypothesis-test*, assuming that:
+
+- *Firstly:* the players asymptotically behave exaclty according to the probabilities defining $H_0$;
+
+- *Secondly:* a player is added (meaning: $7$ total players), whose skills in playing darts are such that the hitting probability of best zones is proportional to their *points*.
+
+All hypothesis testing involved is performed via *Pearson's* $\chi^2$ *homogeneity testing* among the single-player distribution samples for the darts hit-zones.
+
+
+#### Solution
+```{r lab_02, code = readLines("src/lab_02.R"), echo=TRUE}
+```
+
+
+**Observations:**
+
+The relatively low number of observations ($280,350$) makes the simulation heavily-dependent on the initially-set simulation seed: a modification of produced data changes significatively the computation of the *p-values* involved. However the general conclusion does not vary.
+
+
+**Conclusions:**
+
+We can conclude that in the first case, when we consider *moderately bad* players only, we cannot reject the null hypothesis for a reasonable range of significancies: $p$ is generally close to $0.85$ across many of the tested *seeds*. When the good player joins, we have to reject the null hypothesis for any reasonable level of significance: $p$, which is almost always *sub-millesimal*.
+
+
+### Ex. 3
+
+Consider now some of the most followed Instagram accounts in 2018: for each of the owners, we report also the number of Twitter followers (in milions). Are the Instagram and Twitter account somehow associated? Perform a correlation test, compute the p-value and give an answer.
+
+#### Solution
+
+```{r lab_03, code = readLines("src/lab_03.R"), echo=TRUE}
+```
+
+**Observations:**
+
+The *Pearson correlation coefficient* in this case measures the linear relationship between Instagram and Twitter followers data, bounded by the fact that correlations of $-1$ and $+1$ imply (respectively) an exact (anti-)linear relationship.
+
+Firstly, it must be noted that -- due to the very reduced sample size -- results coming from such observations hardly can be generalized to the distribution the sample is a representative of.
+
+The observed correlation amounts to $cor = -0.424$ and evidences moderate anticorrelation between Twitter and Instagram followers count in the considered sample.
+
+However, significance testing of the *Null Hipothesis* $H_0:$ *true correlation is equal to 0* leads to the conclusion it cannot be rejected, with $p = 0.295$. This is also confirmed by a $95\%$ confidence interval compatible with $R=0$
+
+
+**Conclusions:**
+
+It is not possible to reject the null hypothesis stating that Twitter and Instagram follower count is uncorrelated for the people the dataset is representative of.
+
+
+### Ex. 4 
+
+Compute analitically $J(\gamma, \gamma; y)$, $J(\gamma, \beta; y)$, $J(\beta, \beta; y)$, i.e. the single *Observed Information Matrix* terms for a *bidimensional Weibull model*.
+	
+#### Solution
+
+Let $l(\gamma,\beta;y)$ be the log-likelihood for such model:	
+$$
+l(\gamma,\beta;y)=n \log(\gamma)  -  n \gamma \log(\beta)  +  \gamma \sum_{i=1}^n(\log(y_i))  -  \sum_{i=1}^n(y_i/\beta)^\gamma.
+$$
+Let $J$ be the *Observed Information Matrix*, defined as:
+
+$$
+J(\theta;y)  =  -\frac{\partial^2 l(\theta;y)}{\partial\theta \partial\theta^T}.
+$$
+Then:
+$$
+\frac{\partial l(\gamma,\beta;y)}{\partial \gamma}  =  \frac{n}{\gamma}   -  n\log(\beta)  + \sum_{i=1}^n\log(y_i) - \sum_{i=1}^n\log\left(\frac{y_i}{\beta}\right)^\gamma\log\left(\frac{y_i}{\beta}\right);
+$$
+$$
+	\frac{\partial l(\gamma,\beta;y)}{\partial \beta} = -\frac{n\gamma}{\beta}  +  \frac{\gamma}{\beta^{\gamma+1}} \sum_{i=1}^n y_i^\gamma.
+$$
+Finally we can compute the partial derivatives:
+	
+1. $\partial_{\gamma\gamma}^2$ term:
+$$
+	\frac{\partial^2 l(\gamma,\beta;y)}{\partial\gamma^2}  =  -\frac{n}{\gamma^2}  +  \sum_{i=1}^n \left( \frac{y_i}{\beta} \right)^\gamma \left[\log\left( \frac{y_i}{\beta} \right)\right]^2;
+$$
+	
+2. $\partial_{\gamma\beta}^2$ and $\partial_{\beta\gamma}^2$ term:
+	
+$$
+	 	\frac{\partial^2 l(\gamma,\beta;y)}{\partial\beta\partial\gamma}  =  \frac{\partial^2 l(\gamma,\beta;y)}{\partial\gamma\partial\beta}  =  \frac{1}{\beta} \left[ - n  +  \frac{1}{\beta^\gamma }\sum_{i=1}^n y_i^\gamma \left( \gamma \log\left(\frac{y_i}{\beta}\right)+1\right)
+	\right];
+$$
+4. $\partial_{\beta\beta}^2$ term:
+	
+$$
+	\frac{\partial^2 l(\gamma,\beta;y)}{\partial\beta^2}  =  \frac{n\gamma}{\beta^2}  -  \frac{\gamma(\gamma+1)}{\beta^{\gamma+2}} \sum_{i=1}^ny_i^\gamma.
+$$
+
+### Ex. 5
+
+Produce the contour plot for the quadratic approximation of the log-likelihood, based on the Taylor series:
+$$
+l(\theta)-l(\hat{\theta}) \approx -\frac{1}{2}(\theta-\hat{\theta})^T\,J(\hat{\theta})(\theta-\hat{\theta}).
+$$
+
+#### Solution
+
+```{r lab_05, code = readLines("src/lab_05.R"), echo=TRUE}
+```
+
+
+## DAAG {.tabset}
+
+### Ex. 3.11 
+
+The following data represent the total number of aberrant crypt foci (abnormal growths in the colon) observed in seven rats that had been administered a single dose of the carcinogen azoxymethane and sacrificed after six weeks (thanks to Ranjana Bird, Faculty of Human Ecology, University of Manitoba for the use of these data):
+
+$$ \begin{matrix}
+87 & 53 & 72 & 90 & 78 & 85 & 83
+\end{matrix} $$
+                        
+Enter these data and compute their sample mean and variance. Is the Poisson model appropriate for these data? To investigate how the sample variance and sample mean differ under the Poisson assumption, repeat the following simulation experiment several times:
+
+```{r}
+x <- rpois(7, 78.3)
+mean(x); var(x)
+```
+
+#### Solution
+
+```{r DAAG_ex_11_cap_3, code = readLines("src/DAAG_ex_11_cap_3.R"), echo=TRUE}
+```
+
+
+**Observations:**
+
+In order to investigate the behaviour of *mean* and *variance* of many different samples generated according to a Poisson distribution -- and knowing the expected theoretical result -- we analyzed in the form of a histogram the absolute-value difference among means and variances for each sample.  
+
+The result, shown above, further confirms the idea of testing for *Poissonity* via checking for coinciding *mean* and *variance* in a sample.
+
+This concept has been e.g. formalized in *[Fisher, 1950]* via the *Dispersion test*, which we use. The resulting statistic distributes asymptotically as a $\chi^2$ with $\#d.f.$ one less than sample size.
+
+
+**Conclusions:**
+
+$\chi^2$ testing on the sample dispersion gives a $p=0.056$ and conventional practice would suggest a very borderline acceptance of the null hypothesis. However, given the small sample size and the heavy constraint on mean and variance imposed by Poissonity, it could not be straightforwardly advisable to assume Poissonity upfront for modelling needs. An increased sample size -- if possible -- should be gathered; or a more flexible distribution could be used instead.  
+Acceptance of Poissonity with $p=0.056$ and no clear pre-stateable significance level would seem like $p$-hacking.
+
+### Ex. 3.13 
+
+A Markov chain for the weather in a particular season of the year has the transition matrix, from one day to the next:
+
+$$ Pb = \begin{bmatrix}
+      & sun & cloud & rain\\ 
+sun   & 0.6 & 0.2   & 0.2\\ 
+cloud & 0.2 & 0.4   & 0.4\\ 
+rain  & 0.4 & 0.3   & 0.3
+\end{bmatrix} $$
+
+It can be shown, using linear algebra, that in the long run this Markov chain will visit the states according to the stationary distribution:
+
+$$ \begin{matrix}
+sun   & cloud & rain\\ 
+0.429 & 0.286 & 0.286
+\end{matrix} $$
+
+A result called the ergodic theorem allows us to estimate this distribution by simulating the Markov chain for a long enough time.
+
+**a)** Simulate $1000$ values, and calculate the proportion of times the chain visits each of the states. Compare the proportions given by the simulation with the above theoretical proportions.
+
+**b)** Following, there is code that calculates rolling averages of the proportions over a number of simulations and plots the result. It uses the function $\texttt{rollmean()}$ from the $\texttt{zoo}$ package. Try varying the number of simulations and the width of the window. How wide a window is needed to get a good sense of the stationary distribution? This series settles down rather quickly to its stationary distribution (it “burns in” quite quickly). A reasonable width of window is, however, needed to give an accurate indication of the stationary distribution.
+
+#### Solution (a)
+
+```{r daag_13_a, code = readLines("src/daag_13_a.R"), echo=TRUE}
+```
+
+**Observations**
+
+The proportion among different states "visited" by the chain depends heavily on the seed and on the initial state of the chain itself. The stated number of total states to consider ($n=1000$) is too small to observe a result which is independent from the seed and from the initial state. A better result can be obtained by enlarging $n$ and by not considering a proper amount of visited states from the beginning of the simulation (so-called *burn-in*).
+
+**Conclusion**
+
+Considering $n=1000$ states from the start of the simulation, the proportion among visited states is not consistent with the the theoretical convergence result. Though, a dominance of the $Sun$ state is observed.  
+Dependence on lack of *burn-in* and a small averaging-sample size is confirmed, in fact, by the observation that with a proper (e.g. $n=1000000$) number of states considered -- even putting *burn-in* apart --  the proportion coincides with the theoretical one.
+
+
+#### Solution (b)
+
+In the following plots, we can observe the variation of the rolling average -- for each state -- computed for an increasing number of visited states of the Markov Chain and for a different window size.
+
+```{r daag_13_b, code = readLines("src/daag_13_b.R"), echo=TRUE}
+```
+
+
+**Observations**
+
+As almost always, a *one size fits all* approach is rarely applicable, and this is also the case. By increasing the number of total observed states the chain is pushed towards convergence and more stable results will follow. On the other hand, an increased window size can forcefully average results, giving a clearer idea of converged results but covering eventual stationarity in variation.
+
+
+**Conclusion**
+
+We can generally observe that, combining a sufficiently large size of the window and a sufficiently far horizon the plot shows what we expect: the convergence proportion is clear and respected statistically,
+$$
+\begin{bmatrix}Sun  & Cloud &  Rain\\
+0.429 & 0.286 & 0.286
+\end{bmatrix}
+$$
+
+### Ex. 4.6 
+
+
+Generate random normal numbers with a sequential dependence structure:
+
+```{r}
+y1 <- rnorm(51)
+y <- y1[-1] + y1[-51]
+acf(y1)  # acf is ‘autocorrelation function’
+acf(y)
+```
+
+Repeat this several times. There should be no consistent pattern in the acf plot for different random samples y1. There will be a fairly consistent pattern in the acf plot for y, a result of the correlation that is introduced by adding to each value the next value in the sequence.
+
+#### Solution
+
+```{r DAAG_ex_6_cap_4, code = readLines("src/DAAG_ex_6_cap_4.R"), echo=TRUE}
+```
+
+
+**Observations and conclusions:**  
+
+In order to analyze the problem at hand, some autocorrelation plots have been made by repeating the gerenation of both Normal and sequentially-dependent random numbers.
+
+In the top plot ($y_1$ series) no easily distinguishable pattern is evident: neither among different samples, nor along the sequence of generated values. Along-sequence correlation is randomly distributed and same-lag behaviour is randomic too.
+
+In the bottom plot ($y$ series) a clear pattern emerges. The plot shows a periodic behaviour of the autocorrelation function along the sequence. A rough estimate of such period seems to be around $6$ lags.  
+Among different samples there seems to be no evident relationship w.r.t. autocorrelation, apart from the evidence they seem to be out of phase, as expected by the indipendent generation of sample-vectors from the $y_1$ sequence.
+
+
+### Ex. 4.7 
+
+Create a function that does the calculations in the first two lines of the previous exercise. Put the calculation in a loop that repeats 25 times. Calculate the mean and variance for each vector y that is returned. Store the 25 means in the vector av, and store the 25 variances in the vector v. Calculate the variance of av.
+
+#### Solution
+
+```{r DAAG_ex_7_cap_4, code = readLines("src/DAAG_ex_7_cap_4.R"), echo=TRUE}
+```
+
+## CS {.tabset}
+
+### Ex. 3.3
+
+Rewrite the following, replacing the loop with efficient code:
+
+```{r}
+n <- 100000; z <- rnorm(n)
+zneg <- 0;j <- 1
+for (i in 1:n) {
+  if (z[i]<0) {
+    zneg[j] <- z[i]
+    j <- j + 1
+  }
+}
+```
+
+Confirm that your rewrite is faster but gives the same result.
+
+#### Solution
+
+```{r CS_ex_3_3_cap3, code = readLines("src/CS_ex_3_3_cap_3.R"), echo=TRUE}
+```
+
+### Ex. 3.5
+
+Consider solving the matrix equation $Ax = y$ for $x$ , where $y$ is a known $n$-vector and $A$ is a known $n \times n$ matrix. The formal solution to the problem is
+$x = A^{-1} \cdot y$ , but it is possible to solve the equation directly, without actually
+forming $A^{−1}$ . This question explores this direct solution. Read the help file
+for solve before trying it.
+
+a) First create an $A$ , $x$ and $y$ satisfying $Ax = y$.
+
+```{r}
+set.seed(0); n <- 1000
+A <- matrix(runif(n*n),n,n); x.true <- runif(n)
+y <- A%*%x.true
+```
+
+The idea is to experiment with solving $Ax = y$ for $x$ , but with a known
+truth to compare the answer to.
+
+b) Using solve , form the matrix $A^{-1}$ explicitly and then form $x_{1} =
+A^{-1} \cdot y$ . Note how long this takes. Also assess the mean absolute differ-
+ence between $x_1$ and $x.true$ (the approximate mean absolute ‘error’ in
+the solution).
+
+c) Now use solve to directly solve for $x$ without forming $A^{−1}$ . Note how
+long this takes and assess the mean absolute error of the result.
+
+d) What do you conclude?
+
+#### Solution
+
+```{r CS_ex_3_5_cap_3, code = readLines("src/CS_ex_3_5_cap_3.R"), echo=TRUE}
+```
+
+From the experimental results outlined above, the *best choice* to solve linear systems is to use the `solve` function, without forming $A^{-1}$; indeed, both mean absolute difference and system time are much less then the other option.
+
+<!-- AN EASTER EGG... -->
+<!-- This allows us to prove -- also for $\mathtt{R}$ -- the (informal) *Dietterich Theorem*:   -->
+<!-- *To numerically solve a linear system you need to understand the meaning of 'Never'. Then, indeed, never invert matrices. It's true in every programming language.*   -->
+<!-- *(Thomas G. Dietterich, 2018)* -->
