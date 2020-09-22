@@ -1,5 +1,7 @@
 # Homework 02
 
+**ATTENTION**: This repo was a forked vesion of [this](https://github.com/emaballarin/statmeth-hw02) repo.
+
 Statistical Methods for Data Science @ UniTS (Spring '20) - Group "I"
 
 A joint effort of:  
