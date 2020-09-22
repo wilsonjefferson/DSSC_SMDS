@@ -1,4 +1,9 @@
-# SMDS_Homework3
-This repository is for Statistical Methods for Data Science Homework #3/ Group B.
+# Homework 03
 
-You can delete the "Matteo" folder in Master, I don't know how to do it. 
+Statistical Methods for Data Science @ UniTS (Spring '20) - Group "B"
+
+A joint effort of:  
+- [Azza Abdel Ghani](https://github.com/AzzaAbdelGhani)
+- [Dogan Can Demirbilek](https://github.com/demirbilek95)  
+- [Matteo Zambon](https://github.com/MatteoZambon)  
+
