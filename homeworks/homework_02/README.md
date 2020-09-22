@@ -1,6 +1,6 @@
 # Homework 02
 
-Statistical Methods for Data Science @ UniTS (Spring '20) - Homework 02 - Group "I"
+Statistical Methods for Data Science @ UniTS (Spring '20) - Group "I"
 
 A joint effort of:  
 - [Pietro Morichetti](https://github.com/wilsonjefferson)  
