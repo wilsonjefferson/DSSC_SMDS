@@ -5,6 +5,7 @@ Statistical Methods for Data Science @ UniTS (Spring '20) - Group "C"
 A joint effort of:  
 - [Michele Rispoli](https://github.com/drpOpZ)  
 - [Andrea Cicchini](https://github.com/Andrecik)  
+- [Pietro Morichetti](https://github.com/wilsonjefferson)
 - [Emanuele Ballarin](https://github.com/emaballarin)  
 
 
