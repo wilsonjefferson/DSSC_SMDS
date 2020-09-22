@@ -1,4 +1,7 @@
 # Project: Covid-19 diffusion in central India
+
+**ATTENTION**: This repo was a forked vesion of [this](https://github.com/eferos93/SMDS_project) repo.
+
 Final project for the Statistical Methods for Data Science course and it aims to: explore, analyze and provide a predictive trend on the daily and cumulative infected people by Covid-19 in the central regions of India.
 
 A joint effort of:  
