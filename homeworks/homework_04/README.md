@@ -1,9 +1,8 @@
-# Rexthor
+# Homework 04
 
-Statistical Methods for Data Science @ UniTS (Spring '20) - Homework 04 - Group "C"
+Statistical Methods for Data Science @ UniTS (Spring '20) - Group "C"
 
 A joint effort of:  
-- [Pietro Morichetti](https://github.com/wilsonjefferson)  
 - [Michele Rispoli](https://github.com/drpOpZ)  
 - [Andrea Cicchini](https://github.com/Andrecik)  
 - [Emanuele Ballarin](https://github.com/emaballarin)  
