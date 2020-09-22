@@ -4,6 +4,7 @@ Statistical Methods for Data Science @ UniTS (Spring '20) - Group "B"
 
 A joint effort of:  
 - [Alice Vegliach](https://github.com/alicev97)  
+- [Pietro Morichetti](https://github.com/wilsonjefferson)
 - [Andrea Cicchini](https://github.com/Andrecik)  
 - [Emanuele Ballarin](https://github.com/emaballarin)  
 
